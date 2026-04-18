@@ -1,31 +1,27 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Language, translations } from '@/lib/translations';
-import { CloudSun, Globe, LayoutTemplate } from 'lucide-react';
+import { CloudSun, Globe } from 'lucide-react';
 import UserMenu from '@/components/dashboard/UserMenu';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-
-export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+function AuthenticatedLayoutContent({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<any>(null);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   
-const currentLang = (searchParams.get('lang') as Language) || 'he';
+  const currentLang = (searchParams.get('lang') as Language) || 'he';
   const [lang, setLang] = useState<Language>(currentLang);
   
-  const t = translations[lang] || translations.he; // Fallback בטוח למקרה של null
-  const isRtl = lang === 'he'; // התיקון כאן: השוואה מפורשת ל-'he'
-  
+  const t = translations[lang] || translations.he;
+  const isRtl = lang === 'he';
+
   useEffect(() => {
-    // וידוא שהערך שמגיע מה-URL הוא אכן שפה נתמכת לפני העדכון
-    if (currentLang === 'he' || currentLang === 'en') {
-      setLang(currentLang);
-    }
+    setLang(currentLang);
   }, [currentLang]);
 
   useEffect(() => {
@@ -66,33 +62,26 @@ const currentLang = (searchParams.get('lang') as Language) || 'he';
   };
 
   const pageInfo = getPageInfo();
-
-  // בדיקה אם המשתמש הוא אופרייטור או אדמין
   const isSystemStaff = userProfile?.role === 'system-admin' || userProfile?.role === 'operator';
 
   return (
     <div className="min-h-screen bg-brand-grey transition-all duration-500" dir={t.dir}>
-      {/* Header קבוע */}
       <nav className="bg-white border-b border-brand-mint sticky top-0 z-[100] px-6 py-4 shadow-sm" dir="ltr">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          
           <Link href={`/dashboard?lang=${lang}`} className="flex items-center gap-3 group">
             <img src="/simple-logo.png" alt="Simple" className="h-7 w-auto object-contain" />
             <span className="text-2xl font-black text-brand-dark tracking-tighter ml-1">Homepage</span>
           </Link>
 
           <div className="flex items-center gap-4">
-             {/* תצוגת סטטוס צוות (נקודה מהבהבת) */}
              {isSystemStaff && (
-               <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-mint/30 rounded-full border border-brand-mint animate-in fade-in duration-500">
+               <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-mint/30 rounded-full border border-brand-mint">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-electric opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-electric"></span>
                   </span>
                   <span className="text-[10px] font-black text-brand-main uppercase tracking-wider">
-                    {userProfile.role === 'system-admin' 
-                      ? (isRtl ? 'מנהל מערכת' : 'System Admin') 
-                      : (isRtl ? 'אופרייטור' : 'Operator')}
+                    {userProfile.role === 'system-admin' ? (isRtl ? 'מנהל מערכת' : 'System Admin') : (isRtl ? 'אופרייטור' : 'Operator')}
                   </span>
                </div>
              )}
@@ -123,5 +112,14 @@ const currentLang = (searchParams.get('lang') as Language) || 'he';
         <div className="w-full">{children}</div>
       </main>
     </div>
+  );
+}
+
+// העטיפה שפותרת את השגיאה של Netlify
+export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-brand-grey" />}>
+      <AuthenticatedLayoutContent>{children}</AuthenticatedLayoutContent>
+    </Suspense>
   );
 }
