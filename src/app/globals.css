@@ -1,26 +1,95 @@
 @import "tailwindcss";
 
+@theme {
+  /* Simple. Brand Palette - Indigo-Playful Professional */
+  
+  /* Main Palette */
+  --color-brand-indigo: #4F46E5;    /* Electric Indigo */
+  --color-brand-lime: #D9F99D;      /* Electric Lime */
+  --color-brand-coral: #FF7E67;     /* Coral Dash (CTA) */
+  --color-brand-midnight: #3B0764;  /* Midnight Purple */
+  --color-brand-pearl: #F3F4F6;     /* Soft Pearl (BG) */
+
+  /* Semantic Mapping - מחבר את הקוד הקיים לצבעים החדשים */
+  --color-brand-dark: var(--color-brand-midnight);
+  --color-brand-main: var(--color-brand-indigo);
+  --color-brand-accent: var(--color-brand-coral);
+  --color-brand-mint: var(--color-brand-lavender); /* Lavender Breeze למטה */
+  --color-brand-grey: var(--color-brand-pearl);
+  --color-brand-charcoal: #64748B;  /* Slate Blue */
+
+  /* Secondary Palette */
+  --color-brand-teal: #0D9488;      /* Ocean Teal */
+  --color-brand-orange: #FB923C;    /* Sunset Orange */
+  --color-brand-lavender: #DDD6FE;  /* Lavender Breeze */
+  
+  /* Legacy mapping (למניעת שבירת UI קיים) */
+  --color-salmon: var(--color-brand-coral);
+  --color-crimson: #E01E4B;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  background-color: var(--color-brand-grey);
+  color: var(--color-brand-dark);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  button, a, select, [role="button"] {
+    cursor: pointer !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* עיצוב בסיסי לשדה הטלפון שיתאים למותג */
+.PhoneInputInput {
+  outline: none;
+  background: transparent;
+  width: 100%;
+}
+
+.phone-input-wrapper .PhoneInput {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.custom-phone-input {
+  display: flex;
+  align-items: center;
+}
+
+.custom-phone-input .PhoneInputCountry {
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.custom-phone-input input {
+  background: transparent;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  width: 100%;
+  padding: 10px 0;
+}
+
+/* יד (pointer) לכל אלמנט לחיץ */
+button, a, select, .PhoneInputCountrySelect {
+  cursor: pointer !important;
+}
+
+@layer utilities {
+  /* Custom Scrollbar for the Canvas Area */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--color-brand-lavender); 
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-brand-indigo);
+  }
 }
