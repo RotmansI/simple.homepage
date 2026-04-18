@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { translations, Language } from '@/lib/translations';
@@ -17,7 +17,8 @@ const AVATAR_OPTIONS = [
   "https://api.dicebear.com/7.x/avataaars/svg?seed=Milo"
 ];
 
-export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
+// פיצול לתוכן פנימי כדי לאפשר שימוש ב-useSearchParams תחת Suspense
+function AuthFormContent({ mode }: { mode: 'login' | 'register' }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -223,5 +224,18 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         {lang === 'he' ? 'חזרה לדף הבית' : 'Back to Home'}
       </Link>
     </div>
+  );
+}
+
+// הייצוא הראשי שעוטף את התוכן ב-Suspense כדי למנוע שגיאות Build
+export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-brand-pearl flex items-center justify-center">
+        <Loader2 className="animate-spin text-brand-indigo w-10 h-10" />
+      </div>
+    }>
+      <AuthFormContent mode={mode} />
+    </Suspense>
   );
 }
