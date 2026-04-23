@@ -75,7 +75,7 @@ export const ShadowGroup = ({
               label="Select Shadow Tint"
               value={getVal('shadow_color') || 'rgba(0,0,0,0.1)'}
               onChange={(color) => setVal('shadow_color', color)}
-              brandingColors={themeColors} // <--- העברה של צבעי המותג לקולור פיקר
+              site={site}
               allSectionsContent={allSectionsContent}
             />
           </div>

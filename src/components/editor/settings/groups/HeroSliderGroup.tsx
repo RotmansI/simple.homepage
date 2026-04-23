@@ -9,7 +9,9 @@ interface HeroSliderGroupProps {
   content: any;
   updateContent: (updates: any) => void;
   allSectionsContent?: any;
-  // כאן התיקון: אנחנו מגדירים בדיוק מה ה-onOpenAssetManager מצפה לקבל
+  // הוספת site ל-interface כדי לפתור את שגיאת ה-Cannot find name
+  site: any;
+  // אנחנו מגדירים בדיוק מה ה-onOpenAssetManager מצפה לקבל
   onOpenAssetManager: (callback: (url: string) => void) => void;
 }
 
@@ -17,6 +19,7 @@ export const HeroSliderGroup = ({
   content, 
   updateContent, 
   allSectionsContent,
+  site, // קבלת site מה-Props
   onOpenAssetManager 
 }: HeroSliderGroupProps) => {
   
@@ -36,7 +39,7 @@ export const HeroSliderGroup = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-start">
       <div className="flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6">
         <Images size={14} className="text-brand-indigo" />
         <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">Hero Slider Management</span>
@@ -49,7 +52,7 @@ export const HeroSliderGroup = ({
             {sliderImages.length < 5 && (
               <button 
                 type="button"
-                onClick={addImage} // הפעלת הפונקציה החדשה
+                onClick={addImage}
                 className="flex items-center gap-1 text-[9px] font-bold text-brand-indigo hover:opacity-70 transition-all uppercase"
               >
                 <Plus size={12} /> Add Slide
@@ -70,7 +73,7 @@ export const HeroSliderGroup = ({
                   <img src={img} className="w-full h-full object-cover" alt="" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold truncate opacity-60 italic">Slide {idx + 1}</p>
+                  <p className="text-[10px] font-bold truncate opacity-60 italic text-start">Slide {idx + 1}</p>
                 </div>
                 <button 
                   type="button"
@@ -109,6 +112,7 @@ export const HeroSliderGroup = ({
             value={content.slider_overlay_color || '#000000'}
             onChange={(color) => updateContent({ slider_overlay_color: color })}
             allSectionsContent={allSectionsContent}
+            site={site} // ה-site כעת מועבר בצורה תקינה
           />
 
           <div className="space-y-3 pt-2 border-t border-brand-lavender/30">

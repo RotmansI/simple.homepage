@@ -99,7 +99,7 @@ export const VisualExtrasGroup = ({
             label={isOutline ? "Theme Color" : "Background"}
             value={getVal('bg_color') || (themeColors ? themeColors[0] : '#6366f1')}
             onChange={handleThemeColorChange}
-            brandingColors={themeColors}
+            site={site}
             allSectionsContent={allSectionsContent}
           />
         </div>
@@ -114,7 +114,7 @@ export const VisualExtrasGroup = ({
               label="Text Color"
               value={getVal('text_color') || '#ffffff'}
               onChange={(color) => setVal('text_color', color)}
-              brandingColors={themeColors}
+              site={site}
               allSectionsContent={allSectionsContent}
             />
           </div>

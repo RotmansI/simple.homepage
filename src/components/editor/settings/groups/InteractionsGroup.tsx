@@ -105,10 +105,10 @@ export const InteractionsGroup = ({
 
               {getVal('hover_type') === 'colors_swap' && (
                 <div className="space-y-4">
-                  <SmartColorPicker label="Hover Text Color" value={getVal('hover_text_color') || '#000000'} onChange={(c) => setVal('hover_text_color', c)} brandingColors={themeColors} />
-                  <SmartColorPicker label="Hover Border Color" value={getVal('hover_border_color') || '#000000'} onChange={(c) => setVal('hover_border_color', c)} brandingColors={themeColors} />
+                  <SmartColorPicker label="Hover Text Color" value={getVal('hover_text_color') || '#000000'} onChange={(c) => setVal('hover_text_color', c)} site={site} />
+                  <SmartColorPicker label="Hover Border Color" value={getVal('hover_border_color') || '#000000'} onChange={(c) => setVal('hover_border_color', c)} site={site} />
                   {elType === 'button' && (
-                    <SmartColorPicker label="Hover Background Color" value={getVal('hover_bg_color') || '#000000'} onChange={(c) => setVal('hover_bg_color', c)} brandingColors={themeColors} />
+                    <SmartColorPicker label="Hover Background Color" value={getVal('hover_bg_color') || '#000000'} onChange={(c) => setVal('hover_bg_color', c)} site={site} />
                   )}
                 </div>
               )}
@@ -191,7 +191,7 @@ export const InteractionsGroup = ({
 )}
 
               {getVal('hover_type') === 'glow' && (
-                <SmartColorPicker label="Glow Color" value={getVal('hover_glow_color') || themeColors?.[2] || '#6366f1'} onChange={(c) => setVal('hover_glow_color', c)} brandingColors={themeColors} />
+                <SmartColorPicker label="Glow Color" value={getVal('hover_glow_color') || themeColors?.[2] || '#6366f1'} onChange={(c) => setVal('hover_glow_color', c)} site={site} />
               )}
             </div>
           </div>

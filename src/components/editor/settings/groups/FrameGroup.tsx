@@ -126,7 +126,7 @@ export const FrameGroup = ({
                 label={isTextElement ? "Stroke Color" : "Border Color"}
                 value={getVal('border_color') || '#000000'}
                 onChange={(color) => setVal('border_color', color)}
-                brandingColors={themeColors}
+                site={site}
                 allSectionsContent={allSectionsContent}
               />
             </div>

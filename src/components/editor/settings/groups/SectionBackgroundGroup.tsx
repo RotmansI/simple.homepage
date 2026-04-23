@@ -112,7 +112,7 @@ const handleImageSelect = () => {
     bg_color: color,
     is_transparent: false // חשוב: ברגע שנבחר צבע, הסקשן כבר לא שקוף
   })}
-  brandingColors={brandingColors}
+  site={site}
   allSectionsContent={allSectionsContent}
 />
 

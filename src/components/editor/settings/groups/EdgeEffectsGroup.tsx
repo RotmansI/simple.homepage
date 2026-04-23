@@ -77,7 +77,7 @@ export const EdgeEffectsGroup = ({
               label="Fade Color"
               value={data.color || '#ffffff'}
               onChange={(color) => updateFade(type, { color })}
-              brandingColors={brandingColors}
+              site={site}
               allSectionsContent={allSectionsContent}
             />
 

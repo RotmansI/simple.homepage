@@ -2,7 +2,8 @@ import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import SiteRenderer from '@/components/sites/SiteRenderer';
 import SiteNavbar from '@/components/sites/SiteNavbar';
-import { ShieldCheck, FileText, Eye, Globe } from 'lucide-react';
+import { ShieldCheck, FileText, Globe } from 'lucide-react';
+import { getGoogleFontsUrl } from '@/utils/fonts'; // ייבוא ה-Utility
 
 export default async function PublicSitePage({ 
   params 
@@ -20,7 +21,7 @@ export default async function PublicSitePage({
 
   if (orgError || !org) return notFound();
 
-  // 2. חילוץ נתוני האתר (המשתמש רואה את ה-draft_data כרגע או את ה-live_data בהתאם להחלטתך)
+  // 2. חילוץ נתוני האתר - כולל theme_settings
   const { data: site, error: siteError } = await supabase
     .from('sites')
     .select('*')
@@ -29,7 +30,6 @@ export default async function PublicSitePage({
 
   if (siteError || !site) return notFound();
 
-  // שימוש ב-draft_data (או live_data אם כבר הטמעת לוגיקת Publish)
   const siteData = site.draft_data || {};
   const pages = siteData.pages || {};
   const currentPage = pages[pageName];
@@ -37,27 +37,28 @@ export default async function PublicSitePage({
   if (!currentPage) return notFound();
 
   const siteDirection = siteData.navbar?.direction || 'rtl';
-
-  // המרת אופסיטי ל-Hex Alpha עבור ה-Linear Gradient
-  const getAlphaHex = (opacity: number) => {
-    const alpha = Math.round((opacity ?? 50) * 2.55);
-    return alpha.toString(16).padStart(2, '0');
-  };
+  
+  // הכנת ה-URL של הפונטים כבר ברמת השרת
+  const fontsUrl = getGoogleFontsUrl(
+    site.theme_settings?.primary_font, 
+    site.theme_settings?.secondary_font
+  );
 
   return (
     <div 
       dir={siteDirection} 
       className="min-h-screen flex flex-col relative"
     >
+      {/* הזרקת הפונטים ב-Head של הדף הציבורי למניעת Layout Shift */}
+      {fontsUrl && <link rel="stylesheet" href={fontsUrl} />}
+
       {/* שכבת הרקע הגלובלית של הדף */}
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        {/* א) צבע בסיס */}
         <div 
           className="absolute inset-0" 
           style={{ backgroundColor: currentPage.bg_color || '#ffffff' }} 
         />
         
-        {/* ב) תמונת רקע עם שקיפות מול צבע הבסיס */}
         {currentPage.bg_image && (
           <img 
             src={currentPage.bg_image} 
@@ -67,7 +68,6 @@ export default async function PublicSitePage({
           />
         )}
 
-        {/* ג) פילטר צבע עליון (Overlay) */}
         {currentPage.bg_filter_color && (
           <div 
             className="absolute inset-0"
@@ -99,7 +99,6 @@ export default async function PublicSitePage({
           />
         </main>
         
-        {/* Footer הקבוע שלך */}
         <footer className="h-[30px] border-t border-brand-lavender/30 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 z-20">
           <div className="flex items-center gap-2">
             <Globe size={12} className="text-brand-indigo" />

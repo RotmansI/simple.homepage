@@ -118,7 +118,7 @@ console.log("Extracted theme colors:", themeColors);
               label="Text Color"
               value={getVal('text_color') || '#000000'}
               onChange={(color) => setVal('text_color', color)}
-              brandingColors={themeColors}
+              site={site}
               allSectionsContent={allSectionsContent}
             />
           )}

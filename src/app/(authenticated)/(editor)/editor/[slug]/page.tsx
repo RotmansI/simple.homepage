@@ -19,6 +19,8 @@ import DividerSection from '@/components/editor/sections/DividerSection';
 import SectionProperties from '@/components/editor/SectionProperties';
 import StructureSidebar from '@/components/editor/StructureSidebar';
 import { WidgetButton } from '@/components/editor/EditorUI';
+import { getGoogleFontsUrl } from '@/utils/fonts'; // וודא שהנתיב תואם למיקום הקובץ אצלך
+
 
 export default function EditorPage() {
   const { slug } = useParams();
@@ -124,10 +126,35 @@ export default function EditorPage() {
     markChanged('page', 'navbar'); 
   };
 
-  const updateTheme = (key: string, value: string) => {
-    setSite((prev: any) => ({ ...prev, theme_settings: { ...prev.theme_settings, [key]: value } }));
-    markChanged('page', 'branding');
+const updateTheme = async (key: string, value: string) => {
+  // 1. יצירת האובייקט המעודכן
+  const updatedSettings = { 
+    ...site.theme_settings, 
+    [key]: value 
   };
+
+  // 2. עדכון סטייט מקומי (בשביל מהירות ב-UI)
+  setSite((prev: any) => ({ 
+    ...prev, 
+    theme_settings: updatedSettings 
+  }));
+
+  // 3. סימון שהיה שינוי (לשמירה הכללית של הדף)
+  markChanged('page', 'branding');
+
+  // 4. שמירה ישירה של ה-Theme ל-Database
+  try {
+    const { error } = await supabase
+      .from('sites')
+      .update({ theme_settings: updatedSettings })
+      .eq('id', site.id);
+
+    if (error) throw error;
+  } catch (err) {
+    console.error("Failed to sync theme to DB:", err);
+    // אופציונלי: להציג Toast שגיאה כאן
+  }
+};
 
 const selectAssetForField = (sectionId: string | undefined, field: string, slideIndex?: number, callback?: (url: string) => void) => {
   setPendingAssetTarget({ 
@@ -355,113 +382,153 @@ const handleAssetSelect = (url: string) => {
 
             {/* CANVAS AREA - Endless Scroll Implementation */}
 {/* CANVAS AREA - Endless Scroll Implementation */}
+{/* שלב 3: הזרקת פונטים ו-CSS Variables לקנבס */}
+{site?.theme_settings && (
+  <>
+    {/* טעינת הפונטים מגוגל באמצעות ה-Utility */}
+    <link 
+      rel="stylesheet" 
+      href={getGoogleFontsUrl(site.theme_settings.primary_font, site.theme_settings.secondary_font)} 
+    />
+
+    {/* הזרקת המשתנים ל-Style Tag כדי שכל הסקשנים יכירו אותם */}
+    <style>{`
+      :root {
+        --site-primary-font: '${site.theme_settings.primary_font || 'Assistant'}', sans-serif;
+        --site-secondary-font: '${site.theme_settings.secondary_font || 'Heebo'}', sans-serif;
+      }
+      
+      /* החלה דינמית על הקנבס בלבד (כדי לא להרוס את האדיטור) */
+      .canvas-preview-area h1, 
+      .canvas-preview-area h2, 
+      .canvas-preview-area h3, 
+      .canvas-preview-area h4,
+      .canvas-preview-area .font-primary {
+        font-family: var(--site-primary-font) !important;
+      }
+
+      .canvas-preview-area p, 
+      .canvas-preview-area span, 
+      .canvas-preview-area div, 
+      .canvas-preview-area button,
+      .canvas-preview-area .font-secondary {
+        font-family: var(--site-secondary-font) !important;
+      }
+    `}</style>
+  </>
+)}
 <main className="flex-1 bg-brand-grey overflow-y-auto custom-scrollbar p-12 flex justify-center">
-                <div 
-                  className={`
-                    shadow-2xl transition-all duration-500 relative flex flex-col h-fit
-                    ${previewMode === 'desktop' ? 'w-full max-w-5xl' : 'w-[375px]'} 
-                    rounded-t-[3rem] border border-brand-mint/30 mb-32 overflow-hidden
-                  `}
-                  style={{
-                    // 1. צבע בסיס (השכבה הכי תחתונה)
-                    backgroundColor: activePageData.bg_color || '#ffffff',
-                    
-                    // 2. שילוב של פילטר הצבע ותמונת הרקע (כמו ב-Public Page)
-                    backgroundImage: `
-                      ${activePageData.bg_filter_color 
-                        ? `linear-gradient(
-                            ${activePageData.bg_filter_color}${Math.round((activePageData.bg_filter_opacity ?? 50) * 2.55).toString(16).padStart(2, '0')}, 
-                            ${activePageData.bg_filter_color}${Math.round((activePageData.bg_filter_opacity ?? 50) * 2.55).toString(16).padStart(2, '0')}
-                          )` 
-                        : 'linear-gradient(transparent, transparent)'},
-                      ${activePageData.bg_image ? `url(${activePageData.bg_image})` : 'none'}
-                    `,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundAttachment: 'scroll',
-                  }}
-                >
-                    {/* שכבת שקיפות לתמונה (כדי שצבע הבסיס יבצבץ מתחתיה) */}
-                    {activePageData.bg_image && (
-                      <div 
-                        className="absolute inset-0 pointer-events-none transition-all duration-500"
-                        style={{ 
-                          backgroundColor: activePageData.bg_color || '#ffffff',
-                          opacity: 1 - ((activePageData.bg_image_opacity ?? 100) / 100),
-                          zIndex: 0
-                        }}
-                      />
-                    )}
-
-                    {/* Canvas Layer */}
-{/* Canvas Layer */}
-<div className="flex-1 flex flex-col min-h-screen relative z-10">
-    {sections.map((s: any) => (
     <div 
-        key={s.id} 
-        onClick={() => setSelectedId(s.id)} 
-        className={`relative transition-all border-x-4 ${selectedId === s.id ? 'border-brand-main bg-brand-mint/5 z-10' : 'border-transparent hover:border-brand-mint/30'}`}
-    >
-        {/* מעבר לשימוש ב-section={s} עבור הרכיבים החדשים שסונכרנו */}
-        {s.type === 'hero' && (
-            <HeroSection 
-                section={s} 
-                isSelected={selectedId === s.id} 
-                updateContent={(updates: any) => updateSectionContent(s.id, updates)}
-            />
-        )}
-
-        {s.type === 'flex' && (
-            <FlexSection 
-                section={s} 
-                updateContent={(updates: any) => updateSectionContent(s.id, updates)}
-            />
-        )}
-
-        {s.type === 'gallery' && (
-            <GallerySection 
-                section={s} 
-                isEditor={true} 
-                updateContent={(updates: any) => updateSectionContent(s.id, updates)}
-            />
-        )}
+        className={`
+        shadow-2xl transition-all canvas-preview-area duration-500 relative flex flex-col h-fit
+        ${previewMode === 'desktop' ? 'w-full max-w-5xl' : 'w-[375px]'} 
+        rounded-t-[3rem] border border-brand-mint/30 mb-32 overflow-hidden
+        `}
+        style={{
+        // 1. צבע בסיס (השכבה הכי תחתונה)
+        backgroundColor: activePageData.bg_color || '#ffffff',
         
-        {/* רכיבים ישנים שעדיין עובדים עם content */}
-        {s.type === 'text' && <TextSection content={s.content} />}
-        {s.type === 'menu' && <MenuSection content={s.content} />}
-        {s.type === 'divider' && <DividerSection content={s.content} />}
-    </div>
-    ))}
+        // 2. שילוב של פילטר הצבע ותמונת הרקע (כמו ב-Public Page)
+        backgroundImage: `
+            ${activePageData.bg_filter_color 
+            ? `linear-gradient(
+                ${activePageData.bg_filter_color}${Math.round((activePageData.bg_filter_opacity ?? 50) * 2.55).toString(16).padStart(2, '0')}, 
+                ${activePageData.bg_filter_color}${Math.round((activePageData.bg_filter_opacity ?? 50) * 2.55).toString(16).padStart(2, '0')}
+                )` 
+            : 'linear-gradient(transparent, transparent)'},
+            ${activePageData.bg_image ? `url(${activePageData.bg_image})` : 'none'}
+        `,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'scroll',
+        }}
+    >
+        {/* שכבת שקיפות לתמונה (כדי שצבע הבסיס יבצבץ מתחתיה) */}
+        {activePageData.bg_image && (
+            <div 
+            className="absolute inset-0 pointer-events-none transition-all duration-500"
+            style={{ 
+                backgroundColor: activePageData.bg_color || '#ffffff',
+                opacity: 1 - ((activePageData.bg_image_opacity ?? 100) / 100),
+                zIndex: 0
+            }}
+            />
+        )}
 
-    {sections.length === 0 && (
-        <div className="flex-1 flex items-center justify-center py-40 border-2 border-dashed border-brand-mint/20 m-8 rounded-[2rem]">
-            <p className="text-brand-charcoal/20 font-black uppercase tracking-widest text-xs">Your canvas is empty</p>
+        {/* Canvas Layer */}
+        <div className="flex-1 flex flex-col min-h-screen relative z-10">
+            {sections.map((s: any) => (
+            <div 
+                key={s.id} 
+                onClick={() => setSelectedId(s.id)} 
+                className={`relative transition-all border-x-4 ${selectedId === s.id ? 'border-brand-main bg-brand-mint/5 z-10' : 'border-transparent hover:border-brand-mint/30'}`}
+            >
+                {/* סקשנים שעובדים עם הארכיטקטורה החדשה (עברת אובייקט סקשן מלא) */}
+                {s.type === 'hero' && (
+                    <HeroSection 
+                        section={s} 
+                        isSelected={selectedId === s.id} 
+                        updateContent={(updates: any) => updateSectionContent(s.id, updates)}
+                    />
+                )}
+
+                {s.type === 'flex' && (
+                    <FlexSection 
+                        section={s} 
+                        updateContent={(updates: any) => updateSectionContent(s.id, updates)}
+                    />
+                )}
+
+                {s.type === 'gallery' && (
+                    <GallerySection 
+                        section={s} 
+                        isEditor={true} 
+                        updateContent={(updates: any) => updateSectionContent(s.id, updates)}
+                    />
+                )}
+                
+                {/* עדכון רכיב ה-Menu לשימוש ב-section במקום content */}
+                {s.type === 'menu' && (
+                    <MenuSection 
+                        section={s} 
+                    />
+                )}
+                
+                {/* רכיבים ישנים שעדיין עובדים עם content בלבד */}
+                {s.type === 'text' && <TextSection content={s.content} />}
+                {s.type === 'divider' && <DividerSection content={s.content} />}
+            </div>
+            ))}
+
+            {sections.length === 0 && (
+                <div className="flex-1 flex items-center justify-center py-40 border-2 border-dashed border-brand-mint/20 m-8 rounded-[2rem]">
+                    <p className="text-brand-charcoal/20 font-black uppercase tracking-widest text-xs">Your canvas is empty</p>
+                </div>
+            )}
+        </div>
+    </div>
+
+    {/* Modal הוספת סקשן */}
+    {showAddModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-dark/20 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-brand-mint" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-8">
+                    <h3 className="font-black uppercase tracking-tighter text-xl text-brand-dark">Add New Section</h3>
+                    <button onClick={() => setShowAddModal(false)} className="hover:rotate-90 transition-transform">
+                        <X size={20} />
+                    </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-start">
+                    <WidgetButton onClick={() => addSection('flex')} icon={<Box size={24} />} label="Canvas" />
+                    <WidgetButton onClick={() => addSection('hero')} icon={<Layout size={24} />} label="Hero" />
+                    <WidgetButton onClick={() => addSection('divider')} icon={<Minus size={24} />} label="Divider" />
+                    <WidgetButton onClick={() => addSection('gallery')} icon={<ImageIcon size={24} />} label="Gallery" />
+                    <WidgetButton onClick={() => addSection('menu')} icon={<UtensilsCrossed size={24} />} label="Menu" />
+                </div>
+            </div>
         </div>
     )}
-</div>
-                </div>
-
-                {/* Modal הוספת סקשן - ללא שינוי לוגיקה, רק וידוא UI */}
-                {showAddModal && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-dark/20 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-brand-mint" onClick={e => e.stopPropagation()}>
-                            <div className="flex justify-between items-center mb-8">
-                                <h3 className="font-black uppercase tracking-tighter text-xl text-brand-dark">Add New Section</h3>
-                                <button onClick={() => setShowAddModal(false)} className="hover:rotate-90 transition-transform">
-                                  <X size={20} />
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-start">
-                                <WidgetButton onClick={() => addSection('flex')} icon={<Box size={24} />} label="Canvas" />
-                                <WidgetButton onClick={() => addSection('hero')} icon={<Layout size={24} />} label="Hero" />
-                                <WidgetButton onClick={() => addSection('divider')} icon={<Minus size={24} />} label="Divider" />
-                                <WidgetButton onClick={() => addSection('gallery')} icon={<ImageIcon size={24} />} label="Gallery" />
-                                <WidgetButton onClick={() => addSection('menu')} icon={<UtensilsCrossed size={24} />} label="Menu" />
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </main>
+</main>
 
 <SectionProperties 
     site={site as any} 

@@ -97,6 +97,7 @@ export const GallerySettings = ({
                 content={content} 
                 updateContent={updateContent} 
                 onOpenAssetManager={(callback) => selectAssetForField(selectedId, 'bg_image', undefined, callback)} 
+                site={site}
             />
         </SettingsCollapse>
 

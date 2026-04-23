@@ -11,6 +11,7 @@ import { HeroSettings } from './HeroSettings';
 import { FlexSettings } from './FlexSettings';
 import { GallerySettings } from './GallerySettings';
 import { SectionBackgroundGroup } from './settings/groups/SectionBackgroundGroup';
+import MenuSectionSettings from './MenuSectionSettings'; // וודא שהנתיב תואם למיקום הקובץ אצלך
 
 // הגדרת טיפוס ה-Callback כדי למנוע שגיאות "implicitly any"
 type AssetCallback = (url: string) => void;
@@ -115,6 +116,7 @@ export default function SectionProperties(props: SectionPropertiesProps) {
                 content={currentPage || {}} 
                 updateContent={updatePage}
                 onOpenAssetManager={(cb: AssetCallback) => selectAssetForField(undefined, 'page_bg_image', undefined, cb)}
+                site={site}
             />
           </div>
 
@@ -198,6 +200,16 @@ export default function SectionProperties(props: SectionPropertiesProps) {
             {...props}
             site={site} // העברת ה-site בצורה מפורשת
             content={selectedSection.content}
+            selectedId={selectedId!}
+            onBackToPage={handleBackToPage}
+          />
+        )}
+
+{selectedSection.type === 'menu' && (
+          <MenuSectionSettings 
+            {...props}
+            site={site}
+            section={selectedSection} // הוספנו את זה כאן
             selectedId={selectedId!}
             onBackToPage={handleBackToPage}
           />

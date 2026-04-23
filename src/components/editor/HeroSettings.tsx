@@ -17,7 +17,7 @@ import { EdgeEffectsGroup } from './settings/groups/EdgeEffectsGroup';
 import { ContentManagerGroup } from './settings/groups/ContentManagerGroup';
 
 interface HeroSettingsProps {
-  site: any; // 1. הוספה ל-Interface
+  site: any; 
   selectedSection: any;
   selectedId: string;
   updateSectionContent: (id: string, content: any) => void;
@@ -32,7 +32,7 @@ interface HeroSettingsProps {
 }
 
 export const HeroSettings = ({
-  site, // 2. חילוץ מה-Props כאן
+  site, 
   selectedSection, 
   selectedId, 
   updateSectionContent, 
@@ -48,7 +48,6 @@ export const HeroSettings = ({
   const content = selectedSection.content;
   const currentElement = content.elements?.find((e: any) => e.id === selectedFlexElementId);
 
-  // 3. עכשיו site נגיש כאן ונוכל לשלוף את הצבע
   const primaryColor = site?.theme_settings?.primary_color || '#000000';
 
   const updateContent = (updates: any) => {
@@ -60,7 +59,7 @@ export const HeroSettings = ({
       id: `${type}-${crypto.randomUUID()}`, 
       type, 
       align: 'center',
-      text_color: primaryColor, // שימוש בצבע הפריימרי!
+      text_color: primaryColor, 
       font_size: type === 'heading' ? 48 : 18,
       font_weight: type === 'heading' ? '800' : '400',
       line_height: 1.2,
@@ -75,7 +74,7 @@ export const HeroSettings = ({
     }
     else if (type === 'button') { 
         newEl.text = 'Click Me'; 
-        newEl.bg_color = primaryColor; // גם הכפתור יקבל צבע פריימרי בדיפולט
+        newEl.bg_color = primaryColor; 
     }
 
     const updatedElements = [...(content.elements || []), newEl];
@@ -114,18 +113,20 @@ export const HeroSettings = ({
         <SectionBasicGroup 
           content={selectedSection} 
           updateContent={(updates) => updateSectionContent(selectedId, updates)} 
+          
         />
       </div>
 
       <div className="flex flex-col">
         <SettingsCollapse label="Dimensions" icon={<Maximize2 size={14}/>}>
-          <DimensionsGroup content={content} updateContent={updateContent} />
+          <DimensionsGroup content={content} updateContent={updateContent} site={site}/>
         </SettingsCollapse>
 
         <SettingsCollapse label="Background Slider" icon={<ImageIcon size={14}/>} defaultOpen={true}>
           <HeroSliderGroup 
             content={content}
             updateContent={updateContent}
+            site={site} // הועבר לכאן כ-Prop תקין
             onOpenAssetManager={(callback) => {
               selectAssetForField(selectedId, 'hero_slide', undefined, callback);
             }}
@@ -133,7 +134,7 @@ export const HeroSettings = ({
         </SettingsCollapse>
 
         <SettingsCollapse label="Edge Effects" icon={<Layers size={14}/>}>
-          <EdgeEffectsGroup content={content} updateContent={updateContent} />
+          <EdgeEffectsGroup content={content} updateContent={updateContent} site={site}/>
         </SettingsCollapse>
 
         <SettingsCollapse label="Section Elements" icon={<GripVertical size={14}/>} defaultOpen={true}>

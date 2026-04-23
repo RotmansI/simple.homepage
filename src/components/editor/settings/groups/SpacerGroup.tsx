@@ -92,7 +92,7 @@ export const SpacerGroup = ({
                 label="Spacer Color"
                 value={getVal('spacer_color') || (themeColors ? themeColors[0] : '#000000')}
                 onChange={(color) => setVal('spacer_color', color)}
-                brandingColors={themeColors} // עכשיו הצבעים יופיעו
+                site={site}
                 allSectionsContent={allSectionsContent}
               />
 
