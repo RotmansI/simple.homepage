@@ -5,7 +5,8 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Language, translations } from '@/lib/translations';
 import { 
-  Loader2, Save, Eye, Monitor, Smartphone, ChevronRight, X, Box, Layout, Minus, Image as ImageIcon, UtensilsCrossed 
+  Loader2, Save, Eye, Monitor, Smartphone, ChevronRight, X, Box, Layout, Minus, Image as ImageIcon, UtensilsCrossed, 
+  ChevronLeft, Maximize2, Minimize2
 } from 'lucide-react';
 
 import HeroSection from '@/components/editor/sections/HeroSection';
@@ -20,6 +21,7 @@ import SectionProperties from '@/components/editor/SectionProperties';
 import StructureSidebar from '@/components/editor/StructureSidebar';
 import { WidgetButton } from '@/components/editor/EditorUI';
 import { getGoogleFontsUrl } from '@/utils/fonts'; // וודא שהנתיב תואם למיקום הקובץ אצלך
+import { EditorCanvas } from '@/components/editor/canvas/EditorCanvas';
 
 
 export default function EditorPage() {
@@ -47,6 +49,8 @@ export default function EditorPage() {
   const [pendingAssetTarget, setPendingAssetTarget] = useState<any>(null);
   const [unsavedChanges, setUnsavedChanges] = useState<{sections: string[], pages: string[]}>({ sections: [], pages: [] });
   const [selectedFlexElementId, setSelectedFlexElementId] = useState<string | null>(null);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
 
   // Effects
   useEffect(() => { loadEditorData(); }, [slug]);
@@ -63,7 +67,34 @@ export default function EditorPage() {
     link.href = favicon;
   }
 }, [site?.draft_data?.favicon]);
+
+useEffect(() => {
+  if (activePanel === 'navbar') {
+    setLeftCollapsed(false); // חייב להישאר פתוח ב-NAV
+    setRightCollapsed(true); // תמיד סגור ב-NAV
+  } else {
+    // כשחוזרים ל-Pages, נפתח את שניהם כברירת מחדל
+    setLeftCollapsed(false);
+    setRightCollapsed(false);
+  }
+}, [activePanel]);
+
+
   // Logic Functions
+const toggleZenMode = () => {
+  if (activePanel === 'navbar') return; // חסימה במצב NAV
+
+  if (!leftCollapsed || !rightCollapsed) {
+    setLeftCollapsed(true);
+    setRightCollapsed(true);
+  } else {
+    setLeftCollapsed(false);
+    setRightCollapsed(false);
+  }
+};
+
+const isZenModeActive = leftCollapsed && rightCollapsed;
+
   const loadEditorData = async () => {
     setLoading(true);
     const { data: orgData } = await supabase.from('organizations').select('*').eq('slug', slug).single();
@@ -331,14 +362,50 @@ const handleAssetSelect = (url: string) => {
     <div className="h-screen flex flex-col bg-brand-grey overflow-hidden" dir="ltr">
         <header className="h-16 bg-white border-b border-brand-mint flex items-center justify-between px-6 z-[100] shadow-sm">
             <div className="flex items-center gap-4">
-                <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-brand-grey rounded-xl transition-colors"><ChevronRight /></button>
+                <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-brand-grey rounded-xl transition-colors"><ChevronLeft /></button>
                 <h1 className="font-black text-brand-dark leading-none">{org?.name_he}</h1>
                 <span className="text-[9px] font-black text-brand-main bg-brand-mint px-2 py-1 rounded uppercase font-mono">{activePageKey}</span>
             </div>
-            <div className="flex bg-brand-grey p-1 rounded-xl border border-brand-mint shadow-inner">
-                <button onClick={() => setPreviewMode('desktop')} className={`p-2 rounded-lg transition-all ${previewMode === 'desktop' ? 'bg-white shadow-sm text-brand-main' : 'text-brand-charcoal/30'}`}><Monitor size={18} /></button>
-                <button onClick={() => setPreviewMode('mobile')} className={`p-2 rounded-lg transition-all ${previewMode === 'mobile' ? 'bg-white shadow-sm text-brand-main' : 'text-brand-charcoal/30'}`}><Smartphone size={18} /></button>
-            </div>
+<div className="flex items-center gap-3">
+    {/* קבוצה 1: מצבי תצוגה */}
+    <div className="flex bg-brand-grey p-1 rounded-xl border border-brand-mint shadow-inner">
+        <button 
+            onClick={() => setPreviewMode('desktop')} 
+            className={`p-2 rounded-lg transition-all ${previewMode === 'desktop' ? 'bg-white shadow-sm text-brand-main' : 'text-brand-charcoal/30'}`}
+            title="Desktop View"
+        >
+            <Monitor size={18} />
+        </button>
+        <button 
+            onClick={() => setPreviewMode('mobile')} 
+            className={`p-2 rounded-lg transition-all ${previewMode === 'mobile' ? 'bg-white shadow-sm text-brand-main' : 'text-brand-charcoal/30'}`}
+            title="Mobile View"
+        >
+            <Smartphone size={18} />
+        </button>
+    </div>
+
+    {/* קו מפריד (Divider) */}
+    <div className="w-px h-6 bg-brand-lavender/50 mx-1" />
+
+    {/* קבוצה 2: ניהול סיידברים (Zen Mode) */}
+    <div className="flex bg-brand-grey p-1 rounded-xl border border-brand-mint shadow-inner">
+        <button 
+            onClick={toggleZenMode}
+            disabled={activePanel === 'navbar'} 
+            className={`p-2 rounded-lg transition-all flex items-center justify-center ${
+                activePanel === 'navbar' 
+                ? 'opacity-20 cursor-not-allowed' 
+                : isZenModeActive 
+                    ? 'bg-brand-main text-white shadow-md' 
+                    : 'bg-white/50 text-brand-charcoal/40 hover:bg-white hover:text-brand-main'
+            }`}
+            title={activePanel === 'navbar' ? "Cannot collapse in Nav mode" : "Zen Mode"}
+        >
+            {isZenModeActive ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+        </button>
+    </div>
+</div>
             <div className="flex items-center gap-3">
                 <button onClick={() => handleSave(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-black text-brand-main hover:bg-brand-mint rounded-xl transition-all"><Eye size={16} /> Preview</button>
                 <button onClick={() => handleSave(false)} disabled={saving} className="bg-brand-main text-white px-6 py-2.5 rounded-xl font-black shadow-lg flex items-center gap-2 min-w-[100px] justify-center">
@@ -347,8 +414,11 @@ const handleAssetSelect = (url: string) => {
             </div>
         </header>
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex h-screen overflow-hidden">
             <StructureSidebar 
+      // ה-Prop החדש ששולט בקיפול
+              isCollapsed={leftCollapsed}
+              toggleSidebar={() => setLeftCollapsed(!leftCollapsed)}  
               activePanel={activePanel} 
               setActivePanel={setActivePanel} 
               pages={pages} 
@@ -417,120 +487,25 @@ const handleAssetSelect = (url: string) => {
     `}</style>
   </>
 )}
-<main className="flex-1 bg-brand-grey overflow-y-auto custom-scrollbar p-12 flex justify-center">
-    <div 
-        className={`
-        shadow-2xl transition-all canvas-preview-area duration-500 relative flex flex-col h-fit
-        ${previewMode === 'desktop' ? 'w-full max-w-5xl' : 'w-[375px]'} 
-        rounded-t-[3rem] border border-brand-mint/30 mb-32 overflow-hidden
-        `}
-        style={{
-        // 1. צבע בסיס (השכבה הכי תחתונה)
-        backgroundColor: activePageData.bg_color || '#ffffff',
-        
-        // 2. שילוב של פילטר הצבע ותמונת הרקע (כמו ב-Public Page)
-        backgroundImage: `
-            ${activePageData.bg_filter_color 
-            ? `linear-gradient(
-                ${activePageData.bg_filter_color}${Math.round((activePageData.bg_filter_opacity ?? 50) * 2.55).toString(16).padStart(2, '0')}, 
-                ${activePageData.bg_filter_color}${Math.round((activePageData.bg_filter_opacity ?? 50) * 2.55).toString(16).padStart(2, '0')}
-                )` 
-            : 'linear-gradient(transparent, transparent)'},
-            ${activePageData.bg_image ? `url(${activePageData.bg_image})` : 'none'}
-        `,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'scroll',
-        }}
-    >
-        {/* שכבת שקיפות לתמונה (כדי שצבע הבסיס יבצבץ מתחתיה) */}
-        {activePageData.bg_image && (
-            <div 
-            className="absolute inset-0 pointer-events-none transition-all duration-500"
-            style={{ 
-                backgroundColor: activePageData.bg_color || '#ffffff',
-                opacity: 1 - ((activePageData.bg_image_opacity ?? 100) / 100),
-                zIndex: 0
-            }}
-            />
-        )}
-
-        {/* Canvas Layer */}
-        <div className="flex-1 flex flex-col min-h-screen relative z-10">
-            {sections.map((s: any) => (
-            <div 
-                key={s.id} 
-                onClick={() => setSelectedId(s.id)} 
-                className={`relative transition-all border-x-4 ${selectedId === s.id ? 'border-brand-main bg-brand-mint/5 z-10' : 'border-transparent hover:border-brand-mint/30'}`}
-            >
-                {/* סקשנים שעובדים עם הארכיטקטורה החדשה (עברת אובייקט סקשן מלא) */}
-                {s.type === 'hero' && (
-                    <HeroSection 
-                        section={s} 
-                        isSelected={selectedId === s.id} 
-                        updateContent={(updates: any) => updateSectionContent(s.id, updates)}
-                    />
-                )}
-
-                {s.type === 'flex' && (
-                    <FlexSection 
-                        section={s} 
-                        updateContent={(updates: any) => updateSectionContent(s.id, updates)}
-                    />
-                )}
-
-                {s.type === 'gallery' && (
-                    <GallerySection 
-                        section={s} 
-                        isEditor={true} 
-                        updateContent={(updates: any) => updateSectionContent(s.id, updates)}
-                    />
-                )}
-                
-                {/* עדכון רכיב ה-Menu לשימוש ב-section במקום content */}
-                {s.type === 'menu' && (
-                    <MenuSection 
-                        section={s} 
-                    />
-                )}
-                
-                {/* רכיבים ישנים שעדיין עובדים עם content בלבד */}
-                {s.type === 'text' && <TextSection content={s.content} />}
-                {s.type === 'divider' && <DividerSection content={s.content} />}
-            </div>
-            ))}
-
-            {sections.length === 0 && (
-                <div className="flex-1 flex items-center justify-center py-40 border-2 border-dashed border-brand-mint/20 m-8 rounded-[2rem]">
-                    <p className="text-brand-charcoal/20 font-black uppercase tracking-widest text-xs">Your canvas is empty</p>
-                </div>
-            )}
-        </div>
-    </div>
-
-    {/* Modal הוספת סקשן */}
-    {showAddModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-dark/20 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-brand-mint" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-8">
-                    <h3 className="font-black uppercase tracking-tighter text-xl text-brand-dark">Add New Section</h3>
-                    <button onClick={() => setShowAddModal(false)} className="hover:rotate-90 transition-transform">
-                        <X size={20} />
-                    </button>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-start">
-                    <WidgetButton onClick={() => addSection('flex')} icon={<Box size={24} />} label="Canvas" />
-                    <WidgetButton onClick={() => addSection('hero')} icon={<Layout size={24} />} label="Hero" />
-                    <WidgetButton onClick={() => addSection('divider')} icon={<Minus size={24} />} label="Divider" />
-                    <WidgetButton onClick={() => addSection('gallery')} icon={<ImageIcon size={24} />} label="Gallery" />
-                    <WidgetButton onClick={() => addSection('menu')} icon={<UtensilsCrossed size={24} />} label="Menu" />
-                </div>
-            </div>
-        </div>
-    )}
+<main className="flex-1 bg-brand-grey overflow-y-auto custom-scrollbar pt-2 flex justify-center">
+<EditorCanvas 
+  activePanel={activePanel}
+  previewMode={previewMode}
+  activePageData={activePageData}
+  sections={sections}
+  selectedId={selectedId}
+  setSelectedId={setSelectedId}
+  updateSectionContent={updateSectionContent}
+  showAddModal={showAddModal}
+  setShowAddModal={setShowAddModal}
+  addSection={addSection}
+  site={site}
+/>
 </main>
 
 <SectionProperties 
+    isCollapsed={rightCollapsed}
+    toggleSidebar={() => setRightCollapsed(!rightCollapsed)}
     site={site as any} 
     activePageKey={activePageKey} 
     pages={pages} 

@@ -45,7 +45,7 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
 
   const modalContent = (
     // z-index 1000 כאן ינצח את ה-z-40 של ה-aside כי הוא מרונדר ב-body
-    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[80px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[60px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300">
       
       <div className="bg-[#FDFDFD] w-full max-w-7xl h-full max-h-[calc(100vh-140px)] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/40 animate-in zoom-in-95 duration-300">
         
@@ -56,7 +56,7 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
               <Languages className="text-brand-main" size={24} />
               Typography Library
             </h2>
-            <p className="text-[11px] font-bold text-brand-charcoal/30 uppercase tracking-widest">Global Assets Management</p>
+            <p className="text-[11px] font-bold text-brand-charcoal/30 uppercase tracking-widest"></p>
           </div>
           <div className="flex items-center gap-3">
              <div className="flex gap-2 bg-brand-grey p-1 rounded-xl mr-4 text-start">

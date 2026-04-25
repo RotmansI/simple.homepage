@@ -1,18 +1,23 @@
 "use client";
 
-import React from 'react';
-import { Clock, Palette, ChevronRight, Type } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, Palette, ChevronRight, Type, Image as ImageIcon, ListTree, Settings2 } from 'lucide-react';
 import { SmartColorPicker } from '../settings/controls/SmartColorPicker';
 import { GoogleFontPicker } from '../settings/controls/GoogleFontPicker';
+import { AssetManagerModal } from '../settings/controls/AssetManager/AssetManagerModal';
+import MenuManagementModal from '../settings/controls/MenuManagementModal';
 
-export const SettingsPanel = ({ site, updateNavbar, updateTheme, allSectionsContent }: any) => {
+export const SettingsPanel = ({ site, updateNavbar, updateTheme, allSectionsContent, onClose }: any) => {
+  const [isAssetManagerOpen, setIsAssetManagerOpen] = useState(false);
+  const [isMenuManagerOpen, setIsMenuManagerOpen] = useState(false);
+  
   const navData = site?.draft_data?.navbar || {};
   const themeSettings = site?.theme_settings || {};
 
   return (
     <div className="p-4 space-y-4 text-start animate-in fade-in duration-300">
-      
-      {/* 1. Typography Settings - הסקציה החדשה */}
+
+      {/* 1. Typography Settings */}
       <details className="group border border-brand-lavender/30 rounded-xl overflow-hidden shadow-sm">
         <summary className="list-none p-3 bg-brand-grey/30 cursor-pointer flex items-center justify-between font-black uppercase text-[10px]">
           <span className="flex items-center gap-2">
@@ -21,10 +26,9 @@ export const SettingsPanel = ({ site, updateNavbar, updateTheme, allSectionsCont
           <ChevronRight size={14} className="group-open:rotate-90 transition-transform"/>
         </summary>
         <div className="p-4 space-y-6 bg-white">
-<GoogleFontPicker 
+          <GoogleFontPicker 
             label="Primary Font (Headings)"
             value={themeSettings.primary_font || 'Assistant'}
-            // הוספת הטיפוס string כאן פותרת את השגיאה
             onChange={(font: string) => updateTheme('primary_font', font)}
           />
           
@@ -33,13 +37,12 @@ export const SettingsPanel = ({ site, updateNavbar, updateTheme, allSectionsCont
           <GoogleFontPicker 
             label="Secondary Font (Body)"
             value={themeSettings.secondary_font || 'Heebo'}
-            // גם כאן אותו דבר
             onChange={(font: string) => updateTheme('secondary_font', font)}
           />
         </div>
       </details>
 
-      {/* 2. Branding Colors - שדרוג ל-SmartColorPicker */}
+      {/* 2. Branding Colors */}
       <details className="group border border-brand-lavender/30 rounded-xl overflow-hidden shadow-sm">
         <summary className="list-none p-3 bg-brand-grey/30 cursor-pointer flex items-center justify-between font-black uppercase text-[10px]">
           <span className="flex items-center gap-2">
@@ -61,7 +64,7 @@ export const SettingsPanel = ({ site, updateNavbar, updateTheme, allSectionsCont
         </div>
       </details>
 
-      {/* 3. Opening Hours - נשאר כפי שהיה עם שיפור עיצובי קל */}
+      {/* 3. Opening Hours */}
       <details className="group border border-brand-lavender/30 rounded-xl overflow-hidden shadow-sm">
         <summary className="list-none p-3 bg-brand-grey/30 cursor-pointer flex items-center justify-between font-black uppercase text-[10px]">
           <span className="flex items-center gap-2">
@@ -87,6 +90,22 @@ export const SettingsPanel = ({ site, updateNavbar, updateTheme, allSectionsCont
           ))}
         </div>
       </details>
+
+      {/* Asset Manager Modal */}
+<AssetManagerModal 
+  isOpen={isAssetManagerOpen}
+  onClose={() => setIsAssetManagerOpen(false)}
+  siteId={site?.id} // שליחת ה-ID של הסייט עצמו
+  onSelect={(url: string) => {
+    setIsAssetManagerOpen(false);
+  }}
+/>
+
+      {/* Menu Management Modal - התיקון כאן: הסרת התנאי והעברת isOpen */}
+      <MenuManagementModal 
+        isOpen={isMenuManagerOpen}
+        onClose={() => setIsMenuManagerOpen(false)} 
+      />
     </div>
   );
 };

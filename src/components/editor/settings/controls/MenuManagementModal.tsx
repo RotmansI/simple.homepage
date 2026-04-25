@@ -1,12 +1,22 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, Upload, Plus, Save, FileJson, Trash2, LayoutGrid, 
   Utensils, DollarSign, Image as ImageIcon, Clock, Calendar, Link as LinkIcon 
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Toast, { ToastType } from '@/components/ui/Toast';
+
+// הגדרת ה-Props לפי הסטנדרט של ה-Sidebar
+interface MenuManagementModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  siteId?: string;
+  site?: any;
+  setSite?: any;
+}
 
 interface MenuItem {
   id: string;
@@ -43,79 +53,77 @@ const DEFAULT_AVAILABILITY: MenuAvailability = {
   "Saturday": { active: true, start: "09:00", end: "22:00" }
 };
 
-export default function MenuManagementModal({ onClose }: { onClose: () => void }) {
+export default function MenuManagementModal({ 
+  isOpen, 
+  onClose, 
+  siteId, 
+  site, 
+  setSite 
+}: MenuManagementModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [menus, setMenus] = useState<any[]>([]);
   const [activeMenu, setActiveMenu] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'availability'>('content');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // מערכת Toast
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const showToast = (message: string, type: ToastType = 'success') => setToast({ message, type });
 
   useEffect(() => {
-    loadMenus();
-  }, []);
+    setMounted(true);
+    if (isOpen) {
+        document.body.style.overflow = 'hidden';
+        loadMenus();
+    } else {
+        document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isOpen, siteId]);
 
 const loadMenus = async () => {
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // הגנה: אם אין יוזר, אל תנסה אפילו לשלוף
-      if (!user) {
-        console.warn("No authenticated user found");
-        setLoading(false);
-        return;
-      }
+  if (!siteId) return;
 
-      const { data, error } = await supabase
-        .from('organization_menus')
-        .select('*')
-        .eq('organization_id', user.id) // כאן היתה הבעיה אם user.id היה חסר
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error("❌ Supabase fetch error:", error.message);
-        showToast("Error loading menus", "error");
-      } else if (data) {
-        setMenus(data);
-        if (!activeMenu && data.length > 0) setActiveMenu(data[0]);
-      }
-    } catch (err) {
-      console.error("Unexpected error:", err);
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const { data, error } = await supabase
+      .from('organization_menus')
+      .select('*')
+      .eq('site_id', siteId) // שינוי שם העמודה
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    if (data) {
+      setMenus(data);
+      if (!activeMenu && data.length > 0) setActiveMenu(data[0]);
     }
-  };
-
-const handleCreateNew = async (customName?: string, customData?: any) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        showToast("You must be logged in", "error");
-        return null;
-      }
-
-const newMenu = {
-  name: customName || "New Menu",
-  organization_id: user.id,
-  menu_data: customData || { categories: [] },
-  menu_availability: DEFAULT_AVAILABILITY // שימוש בעמודה החדשה
+  } catch (err) {
+    console.error("Error loading menus:", err);
+    showToast("Error loading menus", "error");
+  } finally {
+    setLoading(false);
+  }
 };
-      
-      const { data, error } = await supabase
-        .from('organization_menus')
-        .insert(newMenu)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error("❌ Insertion error:", error.message);
-        throw error;
-      }
+
+  const handleCreateNew = async (customName?: string, customData?: any) => {
+  if (!siteId) return;
+  
+  try {
+    const newMenu = {
+      name: customName || "New Menu",
+      site_id: siteId, // שינוי שם העמודה
+      menu_data: customData || { categories: [] },
+      menu_availability: DEFAULT_AVAILABILITY 
+    };
+    
+    const { data, error } = await supabase
+      .from('organization_menus')
+      .insert(newMenu)
+      .select()
+      .single();
+    
+    if (error) throw error;
 
       if (data) {
         setMenus(prev => [data, ...prev]);
@@ -129,7 +137,7 @@ const newMenu = {
     }
   };
 
-const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -137,24 +145,18 @@ const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
     reader.onload = async (event) => {
       try {
         const rawJson = JSON.parse(event.target?.result as string);
-        
-        // פונקציית מיפוי חכמה למבנה Wolt/חיצוני
         const parseExternalMenu = (data: any) => {
           const source = Array.isArray(data) ? data : (data.categories || []);
-          
           return {
             categories: source.map((cat: any) => ({
               id: crypto.randomUUID(),
               name: cat.name || "Unnamed Category",
               description: cat.description || "",
-              // מיפוי פריטים מתוך children או items
               items: (cat.children || cat.items || []).map((item: any) => ({
                 id: crypto.randomUUID(),
                 name: item.name || "Unnamed Item",
-                // המרת מחיר למחרוזת למניעת שגיאות ב-input
                 price: item.price?.toString() || "0",
                 description: item.description || "",
-                // חילוץ URL של תמונה - כאן התיקון הקריטי
                 image_url: item.image_url || item.imageUrl || item.image || ""
               }))
             }))
@@ -162,25 +164,16 @@ const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
         };
 
         const menuName = prompt("Enter a name for the imported menu:", "Imported Menu");
-        
         if (menuName) {
           const formattedData = parseExternalMenu(rawJson);
-          
           if (formattedData.categories.length === 0) {
             showToast("No data found in JSON", "error");
             return;
           }
-
-          // יצירת התפריט החדש ב-Database עם הנתונים המפורמטים
           const created = await handleCreateNew(menuName, formattedData);
-          
-          if (created) {
-            showToast(`Success! Imported ${formattedData.categories.length} categories.`);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-          }
+          if (created && fileInputRef.current) fileInputRef.current.value = '';
         }
       } catch (err) {
-        console.error("Import error:", err);
         showToast("Failed to parse JSON file", "error");
       }
     };
@@ -221,15 +214,15 @@ const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
   const saveToDatabase = async () => {
     if (!activeMenu) return;
     setLoading(true);
-const { error } = await supabase
-  .from('organization_menus')
-  .update({
-    name: activeMenu.name,
-    description: activeMenu.description,
-    menu_data: activeMenu.menu_data,
-    menu_availability: activeMenu.menu_availability // כאן העדכון
-  })
-  .eq('id', activeMenu.id);
+    const { error } = await supabase
+      .from('organization_menus')
+      .update({
+        name: activeMenu.name,
+        description: activeMenu.description,
+        menu_data: activeMenu.menu_data,
+        menu_availability: activeMenu.menu_availability 
+      })
+      .eq('id', activeMenu.id);
 
     if (!error) {
       showToast("All changes saved to cloud");
@@ -251,28 +244,28 @@ const { error } = await supabase
     }
   };
 
-const toggleDay = (day: string) => {
-  const availability = activeMenu.menu_availability || DEFAULT_AVAILABILITY;
-  const updated = {
-    ...availability,
-    [day]: { ...availability[day], active: !availability[day].active }
+  const toggleDay = (day: string) => {
+    const availability = activeMenu.menu_availability || DEFAULT_AVAILABILITY;
+    const updated = {
+      ...availability,
+      [day]: { ...availability[day], active: !availability[day].active }
+    };
+    setActiveMenu({ ...activeMenu, menu_availability: updated });
   };
-  setActiveMenu({ ...activeMenu, menu_availability: updated });
-};
 
-const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
-  const availability = activeMenu.menu_availability || DEFAULT_AVAILABILITY;
-  const updated = {
-    ...availability,
-    [day]: { ...availability[day], [field]: value }
+  const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
+    const availability = activeMenu.menu_availability || DEFAULT_AVAILABILITY;
+    const updated = {
+      ...availability,
+      [day]: { ...availability[day], [field]: value }
+    };
+    setActiveMenu({ ...activeMenu, menu_availability: updated });
   };
-  setActiveMenu({ ...activeMenu, menu_availability: updated });
-};
 
-  const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[100px] pb-10 px-4 md:px-8 overflow-hidden">
+  const modalContent = (
+    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[60px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300">
       
       {toast && (
         <Toast 
@@ -282,7 +275,7 @@ const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
         />
       )}
 
-      <div className="bg-[#FDFDFD] w-full max-w-7xl h-full max-h-[calc(100vh-140px)] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/40 animate-in zoom-in-95 duration-300">
+      <div className="bg-[#FDFDFD] w-full max-w-7xl h-full max-h-[calc(100vh-140px)] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/40 animate-in zoom-in-95 duration-300 text-start font-sans">
         
         {/* Header */}
         <div className="p-6 bg-white border-b border-brand-lavender/30 flex justify-between items-center shrink-0">
@@ -314,8 +307,8 @@ const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
           </div>
         </div>
 
+        {/* שאר תוכן המודאל ללא שינוי פונקציונלי */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar */}
           <div className="w-64 bg-white border-r border-brand-lavender/20 p-5 overflow-y-auto space-y-2 custom-scrollbar">
             <p className="text-[10px] font-black text-brand-charcoal/20 uppercase tracking-widest px-2 mb-4">Library</p>
             {menus.map(m => (
@@ -337,12 +330,10 @@ const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
             ))}
           </div>
 
-          {/* Main Editor */}
           <div className="flex-1 overflow-y-auto bg-[#F8F9FB] relative custom-scrollbar">
             {activeMenu ? (
               <div className="p-10 max-w-5xl mx-auto space-y-6">
-                
-                {/* Internal Tabs */}
+                {/* תוכן עריכה כפי שהיה */}
                 <div className="flex gap-4 mb-4">
                   <button 
                     onClick={() => setActiveTab('content')}
@@ -360,7 +351,7 @@ const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
 
                 {activeTab === 'content' ? (
                   <>
-                    <div className="bg-white p-8 rounded-[2rem] border border-brand-lavender/30 shadow-sm flex justify-between items-center">
+                    <div className="bg-white p-8 rounded-[2rem] border border-brand-lavender/30 shadow-sm flex justify-between items-center text-start">
                       <div className="flex-1">
                         <input 
                           value={activeMenu.name}
@@ -380,7 +371,7 @@ const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
                       </button>
                     </div>
 
-                    <div className="space-y-6 pb-20">
+                    <div className="space-y-6 pb-20 text-start">
                       {activeMenu.menu_data?.categories?.map((category: MenuCategory, catIndex: number) => (
                         <div key={category.id} className="bg-white rounded-[2rem] border border-brand-lavender/30 overflow-hidden shadow-sm">
                           <div className="p-5 bg-brand-pearl/40 border-b border-brand-lavender/20 flex justify-between items-center">
@@ -404,7 +395,7 @@ const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
                           <div className="p-6 space-y-4">
                             {category.items.map((item, itemIndex) => (
                               <div key={item.id} className="p-5 bg-white border border-brand-lavender/20 rounded-2xl space-y-4 hover:border-brand-main/30 transition-all shadow-sm">
-                                <div className="flex gap-5">
+                                <div className="flex gap-5 text-start">
                                   <div className="w-24 h-24 bg-brand-grey rounded-xl flex items-center justify-center text-brand-charcoal/20 shrink-0 overflow-hidden border border-brand-lavender/20 shadow-inner">
                                     {item.image_url ? <img src={item.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={28} />}
                                   </div>
@@ -478,47 +469,46 @@ const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
                     </div>
                   </>
                 ) : (
-<div className="space-y-4">
-  {Object.keys(DEFAULT_AVAILABILITY).map(day => {
-    const dayData = (activeMenu.menu_availability || DEFAULT_AVAILABILITY)[day];
-    return (
-      <div key={day} className={`flex items-center gap-6 p-4 rounded-2xl border transition-all ${dayData.active ? 'bg-brand-pearl/40 border-brand-main/20' : 'bg-brand-grey/30 border-transparent opacity-60'}`}>
-        <div className="flex items-center gap-4 w-32 shrink-0">
-           <input 
-             type="checkbox" 
-             checked={dayData.active} 
-             onChange={() => toggleDay(day)}
-             className="w-5 h-5 rounded-md accent-brand-main cursor-pointer"
-           />
-           <span className="font-black text-sm text-brand-dark">{day}</span>
-        </div>
-
-        {dayData.active && (
-          <div className="flex items-center gap-4 flex-1 animate-in slide-in-from-left-2">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-[10px] font-black uppercase text-brand-charcoal/30">From</span>
-              <input 
-                type="time" 
-                value={dayData.start}
-                onChange={(e) => updateDayTime(day, 'start', e.target.value)}
-                className="bg-white p-2 rounded-lg border border-brand-lavender/50 font-bold text-sm outline-none focus:border-brand-main"
-              />
-            </div>
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-[10px] font-black uppercase text-brand-charcoal/30">Until</span>
-              <input 
-                type="time" 
-                value={dayData.end}
-                onChange={(e) => updateDayTime(day, 'end', e.target.value)}
-                className="bg-white p-2 rounded-lg border border-brand-lavender/50 font-bold text-sm outline-none focus:border-brand-main"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  })}
-</div>
+                  <div className="space-y-4">
+                    {Object.keys(DEFAULT_AVAILABILITY).map(day => {
+                      const dayData = (activeMenu.menu_availability || DEFAULT_AVAILABILITY)[day];
+                      return (
+                        <div key={day} className={`flex items-center gap-6 p-4 rounded-2xl border transition-all ${dayData.active ? 'bg-brand-pearl/40 border-brand-main/20' : 'bg-brand-grey/30 border-transparent opacity-60'}`}>
+                          <div className="flex items-center gap-4 w-32 shrink-0">
+                             <input 
+                               type="checkbox" 
+                               checked={dayData.active} 
+                               onChange={() => toggleDay(day)}
+                               className="w-5 h-5 rounded-md accent-brand-main cursor-pointer"
+                             />
+                             <span className="font-black text-sm text-brand-dark">{day}</span>
+                          </div>
+                          {dayData.active && (
+                            <div className="flex items-center gap-4 flex-1 animate-in slide-in-from-left-2">
+                              <div className="flex items-center gap-2 flex-1">
+                                <span className="text-[10px] font-black uppercase text-brand-charcoal/30">From</span>
+                                <input 
+                                  type="time" 
+                                  value={dayData.start}
+                                  onChange={(e) => updateDayTime(day, 'start', e.target.value)}
+                                  className="bg-white p-2 rounded-lg border border-brand-lavender/50 font-bold text-sm outline-none focus:border-brand-main"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 flex-1">
+                                <span className="text-[10px] font-black uppercase text-brand-charcoal/30">Until</span>
+                                <input 
+                                  type="time" 
+                                  value={dayData.end}
+                                  onChange={(e) => updateDayTime(day, 'end', e.target.value)}
+                                  className="bg-white p-2 rounded-lg border border-brand-lavender/50 font-bold text-sm outline-none focus:border-brand-main"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             ) : (
@@ -535,4 +525,6 @@ const updateDayTime = (day: string, field: 'start' | 'end', value: string) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
