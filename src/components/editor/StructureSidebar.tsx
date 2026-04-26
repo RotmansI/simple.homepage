@@ -21,6 +21,7 @@ export default function StructureSidebar(props: any) {
     toggleSidebar,
     activePanel, 
     setActivePanel, 
+    setShowAddModal,
     site,
     setSite,
     assets
@@ -84,7 +85,7 @@ return (
           
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {activePanel === 'pages' && <PagesPanel {...props} />}
+            {activePanel === 'pages' && <PagesPanel setShowAddModal={setShowAddModal} {...props} />}
             {activePanel === 'navbar' && <NavbarPanel {...props} />}
             {activePanel === 'settings' && <SettingsPanel {...props} />}
             

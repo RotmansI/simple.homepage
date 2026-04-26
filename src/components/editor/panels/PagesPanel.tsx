@@ -203,15 +203,16 @@ export const PagesPanel = ({
 <button 
   onClick={(e) => { 
     e.stopPropagation();
-    // 1. קודם כל פותחים את המודאל כדי להבטיח תגובה מיידית ב-UI
-    setShowAddModal(true); 
     
-    // 2. רק אז מוודאים שאנחנו בעמוד הנכון (מבלי לאפס בחירות אם אנחנו כבר שם)
+    // אם לחצנו על הוספה בעמוד שאינו הפעיל, נעבור אליו
     if (activePageKey !== pKey) {
       switchPage(pKey);
     }
+    
+    // פתיחת המודאל
+    setShowAddModal(true); 
   }} 
-  className="w-full py-2 mt-2 border-2 border-dashed border-brand-mint/40 rounded-lg text-[9px] font-black text-brand-charcoal/40 hover:border-brand-main transition-all flex items-center justify-center gap-2 group"
+  className="w-full py-2 mt-2 border-2 border-dashed border-brand-mint/40 rounded-lg text-[9px] font-black text-brand-charcoal/40 hover:border-brand-main hover:text-brand-main transition-all flex items-center justify-center gap-2 group"
 >
   <Plus size={12} className="group-hover:rotate-90 transition-transform duration-300" /> 
   <span>ADD SECTION</span>

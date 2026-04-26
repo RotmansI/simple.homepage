@@ -10,6 +10,7 @@ import GallerySection from '../sections/GallerySection';
 import MenuSection from '../sections/MenuSection';
 import TextSection from '../sections/TextSection';
 import DividerSection from '../sections/DividerSection';
+import AddSectionModal from '@/components/editor/settings/controls/AddSectionModal';
 
 // Focus Mode Component
 import { NavbarPreviewCanvas } from './NavbarPreviewCanvas';
@@ -113,21 +114,11 @@ return (
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-dark/20 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-brand-mint" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="font-black uppercase tracking-tighter text-xl text-brand-dark">Add New Section</h3>
-              <button onClick={() => setShowAddModal(false)} className="hover:rotate-90 transition-transform"><X size={20} /></button>
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-start">
-              <WidgetButton onClick={() => addSection('flex')} icon={<Box size={24} />} label="Canvas" />
-              <WidgetButton onClick={() => addSection('hero')} icon={<Layout size={24} />} label="Hero" />
-              <WidgetButton onClick={() => addSection('divider')} icon={<Minus size={24} />} label="Divider" />
-              <WidgetButton onClick={() => addSection('gallery')} icon={<ImageIcon size={24} />} label="Gallery" />
-              <WidgetButton onClick={() => addSection('menu')} icon={<UtensilsCrossed size={24} />} label="Menu" />
-            </div>
-          </div>
-        </div>
+<AddSectionModal 
+  isOpen={showAddModal} 
+  onClose={() => setShowAddModal(false)} 
+  onAddSection={addSection} 
+/>
       )}
     </main>
   );

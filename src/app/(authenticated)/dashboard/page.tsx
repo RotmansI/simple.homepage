@@ -41,11 +41,12 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
+const fetchDashboardData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // 1. שליפת הפרופיל כדי לדעת את ה-Role
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
@@ -54,39 +55,51 @@ export default function DashboardPage() {
     
     setUserProfile(profile);
 
-    let orgsQuery;
-
-    // שליפת ארגונים כולל האתר המקושר (בדיקה אם קיים)
-    if (profile?.role === 'system-admin' || profile?.role === 'operator') {
-      orgsQuery = supabase.from('organizations').select(`
-        *,
-        sites(id, is_published),
-        user_organizations(
-          profiles(first_name, last_name)
-        )
-      `);
-    } else {
-      orgsQuery = supabase
-        .from('user_organizations')
-        .select(`
-          organizations (*, sites(id, is_published), user_organizations(profiles(first_name, last_name)))
-        `)
-        .eq('user_id', user.id);
+    // 2. טיפול במקרה של משתמש ללא הרשאות כלל
+    if (profile?.role === 'unassigned' || !profile?.role) {
+      setOrganizations([]);
+      setLoading(false);
+      return;
     }
 
-    const { data: result } = await orgsQuery;
-    
-    // תיקון המיפוי: מוודאים ש-sites נשאר זמין באובייקט הארגון כפי שהוא מגיע מה-Response
-    const formattedOrgs = profile?.role === 'system-admin' || profile?.role === 'operator'
-      ? (result || [])
-      : (result?.map((item: any) => ({
-          ...item.organizations
-        })) || []);
+    let formattedOrgs: any[] = [];
 
+    // 3. לוגיקת שליפה לפי תפקיד
+    if (profile.role === 'system-admin' || profile.role === 'operator') {
+      // מנהלי מערכת רואים הכל
+      const { data: result } = await supabase
+        .from('organizations')
+        .select(`
+          *,
+          sites(id, is_published),
+          user_organizations(
+            profiles(first_name, last_name)
+          )
+        `);
+      formattedOrgs = result || [];
+    } else {
+      // site-admin ו-site-editor רואים רק מה שמשויך אליהם ב-user_organizations
+      const { data: result } = await supabase
+        .from('user_organizations')
+        .select(`
+          organizations (
+            *, 
+            sites(id, is_published), 
+            user_organizations(
+              profiles(first_name, last_name)
+            )
+          )
+        `)
+        .eq('user_id', user.id);
+
+      // שינוי המבנה כדי שהארגון יהיה בשכבה העליונה של האובייקט
+      formattedOrgs = result?.map((item: any) => item.organizations).filter(Boolean) || [];
+    }
+    console.log("DEBUG - User Role:", profile.role, "Result:", formattedOrgs);
     setOrganizations(formattedOrgs);
     setLoading(false);
   };
-
+  
   const filteredOrgs = organizations.filter(org => {
     const search = searchTerm.toLowerCase();
     const nameHe = org.name_he?.toLowerCase() || '';

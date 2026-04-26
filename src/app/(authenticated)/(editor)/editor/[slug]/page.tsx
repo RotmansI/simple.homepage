@@ -22,6 +22,7 @@ import StructureSidebar from '@/components/editor/StructureSidebar';
 import { WidgetButton } from '@/components/editor/EditorUI';
 import { getGoogleFontsUrl } from '@/utils/fonts'; // וודא שהנתיב תואם למיקום הקובץ אצלך
 import { EditorCanvas } from '@/components/editor/canvas/EditorCanvas';
+import AddSectionModal from '@/components/editor/settings/controls/AddSectionModal';
 
 
 export default function EditorPage() {
@@ -70,28 +71,21 @@ export default function EditorPage() {
 
 useEffect(() => {
   if (activePanel === 'navbar') {
-    setLeftCollapsed(false); // חייב להישאר פתוח ב-NAV
-    setRightCollapsed(true); // תמיד סגור ב-NAV
-  } else {
-    // כשחוזרים ל-Pages, נפתח את שניהם כברירת מחדל
-    setLeftCollapsed(false);
-    setRightCollapsed(false);
+    setRightCollapsed(true);
+    setLeftCollapsed(false); // מוודא שהשמאלי פתוח כי צריך אותו לעריכה
   }
 }, [activePanel]);
 
 
   // Logic Functions
 const toggleZenMode = () => {
-  if (activePanel === 'navbar') return; // חסימה במצב NAV
-
-  if (!leftCollapsed || !rightCollapsed) {
-    setLeftCollapsed(true);
-    setRightCollapsed(true);
-  } else {
-    setLeftCollapsed(false);
-    setRightCollapsed(false);
-  }
+  const targetState = !leftCollapsed || !rightCollapsed; // אם אחד פתוח, נסגור את שניהם
+  setLeftCollapsed(targetState);
+  setRightCollapsed(targetState);
 };
+
+const toggleLeft = () => setLeftCollapsed(!leftCollapsed);
+const toggleRight = () => setRightCollapsed(!rightCollapsed);
 
 const isZenModeActive = leftCollapsed && rightCollapsed;
 
@@ -280,28 +274,91 @@ const handleAssetSelect = (url: string) => {
     markChanged('page', 'navbar');
   };
 
+// --- Section Management Logic ---
+
+  // פונקציית עזר לעדכון ה-Sections בתוך ה-Site State
+  // זה יחסוך לנו כתיבה חוזרת של כל המבנה העמוק של האובייקט
+  const updateSectionsState = (newSections: any[]) => {
+    setSite((prev: any) => ({
+      ...prev,
+      draft_data: {
+        ...prev.draft_data,
+        pages: {
+          ...prev.draft_data.pages,
+          [activePageKey]: {
+            ...activePageData,
+            sections: newSections
+          }
+        }
+      }
+    }));
+    markChanged('page', activePageKey);
+  };
+
+  const addSection = (type: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    
+    // הגדרת תוכן ראשוני לפי סוג הסקשן
+    const content = { 
+      title: '', 
+      subtitle: '', 
+      bg_type: 'solid', 
+      bg_color: '#ffffff' 
+    };
+
+    const newSection = { 
+      id, 
+      type, 
+      content, 
+      name: `New ${type.toUpperCase()}`,
+      settings: {} // הכנה להגדרות עתידיות
+    };
+
+    updateSectionsState([...sections, newSection]);
+    setSelectedId(id);
+    setShowAddModal(false); // סגירת המודאל החדש
+  };
+
   const deleteSection = (id: string) => {
     if (!confirm('Are you sure you want to delete this section?')) return;
     const updated = sections.filter((s: any) => s.id !== id);
-    setSite((prev: any) => ({ ...prev, draft_data: { ...prev.draft_data, pages: { ...prev.draft_data.pages, [activePageKey]: { ...activePageData, sections: updated } } } }));
-    setSelectedId(null);
-    markChanged('page', activePageKey);
+    updateSectionsState(updated);
+    if (selectedId === id) setSelectedId(null);
   };
 
   const duplicateSection = (id: string) => {
     const original = sections.find((s: any) => s.id === id);
     if (!original) return;
+
     const newId = Math.random().toString(36).substr(2, 9);
-    const newSection = { ...JSON.parse(JSON.stringify(original)), id: newId, name: `${original.name || original.type} (Copy)`, isNew: true };
+    const newSection = { 
+      ...JSON.parse(JSON.stringify(original)), 
+      id: newId, 
+      name: `${original.name || original.type} (Copy)`, 
+      isNew: true 
+    };
+
     const idx = sections.findIndex((s: any) => s.id === id);
     const newSections = [...sections];
     newSections.splice(idx + 1, 0, newSection);
-    setSite((prev: any) => ({ ...prev, draft_data: { ...prev.draft_data, pages: { ...prev.draft_data.pages, [activePageKey]: { ...activePageData, sections: newSections } } } }));
+    
+    updateSectionsState(newSections);
     setSelectedId(newId);
-    markChanged('page', activePageKey);
   };
 
-  const deletePage = (pKey: string) => {
+  const moveSection = (direction: 'up' | 'down') => {
+    if (!selectedId) return;
+    const idx = sections.findIndex((s: any) => s.id === selectedId);
+    if ((direction === 'up' && idx === 0) || (direction === 'down' && idx === sections.length - 1)) return;
+    
+    const newSections = [...sections];
+    const target = direction === 'up' ? idx - 1 : idx + 1;
+    [newSections[idx], newSections[target]] = [newSections[target], newSections[idx]];
+    
+    updateSectionsState(newSections);
+  };
+
+    const deletePage = (pKey: string) => {
     if (pKey === 'home') { alert("Cannot delete home page"); return; }
     if (!confirm(`Delete page?`)) return;
     const newPages = { ...pages }; delete newPages[pKey];
@@ -309,23 +366,6 @@ const handleAssetSelect = (url: string) => {
     setSelectedId(null);
   };
 
-  const addSection = (type: string) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    const content = { title: '', subtitle: '', bg_type: 'solid', bg_color: '#000000' };
-    setSite((prev: any) => ({ ...prev, draft_data: { ...prev.draft_data, pages: { ...prev.draft_data.pages, [activePageKey]: { ...activePageData, sections: [...sections, { id, type, content, name: `New ${type.toUpperCase()}` }] } } } }));
-    setSelectedId(id);
-    setShowAddModal(false);
-    markChanged('page', activePageKey);
-  };
-
-  const moveSection = (direction: 'up' | 'down') => {
-    const idx = sections.findIndex((s: any) => s.id === selectedId);
-    if ((direction === 'up' && idx === 0) || (direction === 'down' && idx === sections.length - 1)) return;
-    const newSections = [...sections];
-    const target = direction === 'up' ? idx - 1 : idx + 1;
-    [newSections[idx], newSections[target]] = [newSections[target], newSections[idx]];
-    setSite((prev: any) => ({ ...prev, draft_data: { ...prev.draft_data, pages: { ...prev.draft_data.pages, [activePageKey]: { ...activePageData, sections: newSections } } } }));
-  };
 
   const addFlexElement = (type: string) => {
     if (!selectedId || selectedSection.type !== 'flex') return;
