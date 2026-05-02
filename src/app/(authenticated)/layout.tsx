@@ -9,7 +9,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
 
-// 1. קומפוננטת התוכן הפנימית
+// 1. קומפוננטת התוכן הפנימית - נשארת ללא שינוי בלוגיקה
 function AuthenticatedLayoutContent({ children }: { children: React.ReactNode }) {
   const { lang, setLang } = useLanguage();
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -17,7 +17,6 @@ function AuthenticatedLayoutContent({ children }: { children: React.ReactNode })
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // פתרון שגיאת ה-Index: הגדרה מפורשת של t לפי הטיפוס Language
   const t = translations[lang as Language];
   const isRtl = lang === 'he';
 
@@ -29,7 +28,6 @@ function AuthenticatedLayoutContent({ children }: { children: React.ReactNode })
         return;
       }
 
-      // שליפת פרופיל והגדרות משתמש במקביל לביצועים אופטימליים
       const [profileRes, settingsRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('user_settings').select('language').eq('user_id', user.id).maybeSingle()
@@ -37,7 +35,6 @@ function AuthenticatedLayoutContent({ children }: { children: React.ReactNode })
 
       if (profileRes.data) setUserProfile(profileRes.data);
       
-      // אם יש שפה שמורה בדאטה-בייס, נעדכן את ה-Context
       if (settingsRes.data?.language) {
         setLang(settingsRes.data.language as Language);
       }
@@ -47,12 +44,9 @@ function AuthenticatedLayoutContent({ children }: { children: React.ReactNode })
 
   const toggleLang = async () => {
     const newLang = lang === 'en' ? 'he' : 'en';
-    
-    // 1. עדכון UI מיידי דרך ה-Context (כל המערכת תתעדכן)
     setLang(newLang); 
 
     if (userProfile?.id) {
-      // 2. עדכון ה-Database עם Upsert
       const { error } = await supabase
         .from('user_settings')
         .upsert({ 
@@ -64,7 +58,6 @@ function AuthenticatedLayoutContent({ children }: { children: React.ReactNode })
       if (error) console.error("Update failed:", error);
     }
 
-    // 3. עדכון ה-URL בצורה שקטה (לסנכרון דפים שעדיין קוראים מה-URL)
     const params = new URLSearchParams(searchParams.toString());
     params.set('lang', newLang);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -141,18 +134,27 @@ function AuthenticatedLayoutContent({ children }: { children: React.ReactNode })
   );
 }
 
-// 2. ה-Default Export הראשי
-export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+// 2. קומפוננטת עזר לחילוץ Params בבטחה תחת Suspense
+function LanguageProviderWrapper({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const initialLang = (searchParams.get('lang') as Language) || 'he';
 
   return (
+    <LanguageProvider initialLang={initialLang}>
+      <AuthenticatedLayoutContent>
+        {children}
+      </AuthenticatedLayoutContent>
+    </LanguageProvider>
+  );
+}
+
+// 3. ה-Default Export הראשי - עכשיו הוא "נקי" לחלוטין ומוכן ל-Build
+export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+  return (
     <Suspense fallback={<div className="min-h-screen bg-brand-grey" />}>
-      <LanguageProvider initialLang={initialLang}>
-        <AuthenticatedLayoutContent>
-          {children}
-        </AuthenticatedLayoutContent>
-      </LanguageProvider>
+      <LanguageProviderWrapper>
+        {children}
+      </LanguageProviderWrapper>
     </Suspense>
   );
 }
