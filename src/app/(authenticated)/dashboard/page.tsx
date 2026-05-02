@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Language, translations } from '@/lib/translations';
+import { getUserSettings, supabase } from '@/lib/supabase';
+import { Language, translations } from '@/lib/translations/index';
 import { 
   Building2, 
   TrendingUp, 
@@ -22,40 +22,41 @@ import {
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import CreateSiteWizard from '@/components/dashboard/CreateSiteWizard';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function DashboardPage() {
-  const searchParams = useSearchParams();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [userProfile, setUserProfile] = useState<any>(null);
   
-  // State לניהול המודאל של הקמת אתר
-  const [wizardOrg, setWizardOrg] = useState<any>(null);
-
-  const lang = (searchParams.get('lang') as Language) || 'he'; 
-  const t = translations[lang];
+  // שימוש ב-Context לשפה (זה מעדכן את הממשק מיידית)
+  const { lang } = useLanguage(); 
+  const t = translations[lang as Language];
   const isRtl = lang === 'he';
+  
+  const [wizardOrg, setWizardOrg] = useState<any>(null);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
-const fetchDashboardData = async () => {
+  const fetchDashboardData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 1. שליפת הפרופיל כדי לדעת את ה-Role
+    // 1. שליפת הפרופיל כדי לדעת את ה-Role (קריטי להמשך הלוגיקה)
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
     
+    // שמירה ב-State המקומי לשימוש ב-UI (כמו isAdmin/isOperator)
     setUserProfile(profile);
 
-    // 2. טיפול במקרה של משתמש ללא הרשאות כלל
+    // 2. טיפול במקרה של משתמש ללא הרשאות
     if (profile?.role === 'unassigned' || !profile?.role) {
       setOrganizations([]);
       setLoading(false);
@@ -64,7 +65,7 @@ const fetchDashboardData = async () => {
 
     let formattedOrgs: any[] = [];
 
-    // 3. לוגיקת שליפה לפי תפקיד
+    // 3. לוגיקת שליפה לפי תפקיד המשתמש
     if (profile.role === 'system-admin' || profile.role === 'operator') {
       // מנהלי מערכת רואים הכל
       const { data: result } = await supabase
@@ -78,7 +79,7 @@ const fetchDashboardData = async () => {
         `);
       formattedOrgs = result || [];
     } else {
-      // site-admin ו-site-editor רואים רק מה שמשויך אליהם ב-user_organizations
+      // משתמשים רגילים רואים רק מה שמשויך אליהם
       const { data: result } = await supabase
         .from('user_organizations')
         .select(`
@@ -92,13 +93,15 @@ const fetchDashboardData = async () => {
         `)
         .eq('user_id', user.id);
 
-      // שינוי המבנה כדי שהארגון יהיה בשכבה העליונה של האובייקט
       formattedOrgs = result?.map((item: any) => item.organizations).filter(Boolean) || [];
     }
-    console.log("DEBUG - User Role:", profile.role, "Result:", formattedOrgs);
+
     setOrganizations(formattedOrgs);
     setLoading(false);
   };
+
+  // ... שאר הקוד של פילטור הארגונים והרינדור נשאר בדיוק אותו דבר
+
   
   const filteredOrgs = organizations.filter(org => {
     const search = searchTerm.toLowerCase();
@@ -131,7 +134,7 @@ const fetchDashboardData = async () => {
   );
 
   return (
-    <main className="grid grid-cols-1 lg:grid-cols-12 gap-6" dir={t.dir}>
+    <main className="grid grid-cols-1 lg:grid-cols-12 gap-6" dir={isRtl ? 'rtl' : 'ltr'}>
       
       <section className="lg:col-span-8 space-y-6">
         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-brand-mint min-h-[500px] flex flex-col">
@@ -214,7 +217,7 @@ const fetchDashboardData = async () => {
 
                           <td className="px-4 py-2 bg-white group-hover:bg-brand-grey border-y border-brand-mint/30">
                             <a 
-                              href={`https://${org.slug}.tabit.io`} 
+                              href={`/sites/${org.slug}`} 
                               target="_blank" 
                               rel="noreferrer"
                               className="flex items-center gap-1.5 font-mono text-[11px] text-brand-main hover:underline"
@@ -244,7 +247,7 @@ const fetchDashboardData = async () => {
                               {hasSite ? (
                                 <>
                                   <Link 
-                                    href={`/editor/${org.slug}?lang=${lang}`}
+                                    href={`/editor/${org.slug}`}
                                     className="p-2 bg-brand-main text-white rounded-lg hover:bg-brand-dark transition-all"
                                     title={isRtl ? "כניסה לעורך" : "Open Editor"}
                                   >
@@ -337,7 +340,7 @@ const fetchDashboardData = async () => {
           </h3>
           <div className="space-y-3">
             <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl flex justify-between items-center text-sm shadow-sm hover:bg-white transition-all">
-              <span className="font-bold text-brand-dark">Wolt Integration</span>
+              <span className="font-bold text-brand-dark">AI Image tool</span>
               <button className="text-brand-main font-black underline cursor-pointer">{t.add}</button>
             </div>
           </div>

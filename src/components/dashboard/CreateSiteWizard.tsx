@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, Check, Palette, Layout, ArrowRight, ArrowLeft, Loader2, Sparkles, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { newSiteWizardTranslations } from '@/lib/translations/newSiteWizard';
 
 interface CreateSiteWizardProps {
   org: any;
@@ -17,6 +18,10 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // בחירת השפה הנכונה
+  const lang = isRtl ? 'he' : 'en';
+  const t = newSiteWizardTranslations[lang];
+
   // בחירת צבעים (Primary, Secondary, Accent, Neutral)
   const [colors, setColors] = useState(['#0B4440', '#E5F2F1', '#F59E0B', '#1F2937']);
   
@@ -24,10 +29,10 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
   const [selectedPages, setSelectedPages] = useState(['home', 'menu', 'contact']);
 
   const pagesOptions = [
-    { id: 'home', label: isRtl ? 'דף הבית' : 'Home', icon: Layout },
-    { id: 'menu', label: isRtl ? 'תפריט' : 'Menu', icon: Palette },
-    { id: 'contact', label: isRtl ? 'צור קשר' : 'Contact', icon: MessageSquare },
-    { id: 'about', label: isRtl ? 'עלינו' : 'About', icon: Sparkles },
+    { id: 'home', label: t.steps.pages.home, icon: Layout },
+    { id: 'menu', label: t.steps.pages.menu, icon: Palette },
+    { id: 'contact', label: t.steps.pages.contact, icon: MessageSquare },
+    { id: 'about', label: t.steps.pages.about, icon: Sparkles },
   ];
 
   const handleFinish = async () => {
@@ -36,16 +41,38 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
     // בניית מבנה הדפים הראשוני
     const initialPages: any = {};
     selectedPages.forEach(p => {
+      const pageInfo = pagesOptions.find(opt => opt.id === p);
       initialPages[p] = {
-        title: pagesOptions.find(opt => opt.id === p)?.label,
+        title: pageInfo?.label,
         sections: p === 'home' ? [{
-          id: 'hero-init',
+          id: `hero-${Math.random().toString(36).substr(2, 9)}`,
           type: 'hero',
           content: { 
             title: isRtl ? org.name_he : org.name_en, 
-            subtitle: isRtl ? 'ברוכים הבאים למסעדה שלנו' : 'Welcome to our restaurant',
+            subtitle: t.initialData.welcome,
             bg_image: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=2000',
-            overlay_opacity: 40
+            slider_overlay_opacity: 40,
+            slider_overlay_color: '#000000',
+            slider_images: ['https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=2000'],
+            elements: [
+               {
+                 id: `el-${Math.random().toString(36).substr(2, 9)}`,
+                 type: 'heading',
+                 text: isRtl ? org.name_he : org.name_en,
+                 font_size: 64,
+                 font_weight: '900',
+                 color: '#ffffff',
+                 align: 'center'
+               },
+               {
+                 id: `el-${Math.random().toString(36).substr(2, 9)}`,
+                 type: 'paragraph',
+                 text: t.initialData.welcome,
+                 font_size: 20,
+                 color: '#ffffff',
+                 align: 'center'
+               }
+            ]
           }
         }] : []
       };
@@ -58,7 +85,9 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
         secondary_color: colors[1],
         accent_color: colors[2],
         neutral_color: colors[3],
-        font_family: "Assistant"
+        primary_font: "Assistant",
+        secondary_font: "Assistant",
+        site_language: lang // הזרקת השפה לתמה כבר מההתחלה
       },
       draft_data: { 
         pages: initialPages,
@@ -69,7 +98,7 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
 
     if (!error) {
       onComplete();
-      router.push(`/editor/${org.slug}?lang=${isRtl ? 'he' : 'en'}`);
+      router.push(`/editor/${org.slug}`);
     } else {
       alert("Error creating site: " + error.message);
     }
@@ -77,7 +106,7 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
   };
 
   return (
-    <div className="fixed inset-0 bg-brand-dark/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-brand-dark/60 backdrop-blur-md z-[200] flex items-center justify-center p-4" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in duration-300">
         
         {/* Header */}
@@ -86,9 +115,9 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
              <div className="w-10 h-10 bg-brand-main rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-main/20">
                 <Sparkles size={20} />
              </div>
-             <div>
+             <div className={isRtl ? 'text-right' : 'text-left'}>
                 <h3 className="text-xl font-black text-brand-dark leading-none">
-                   {isRtl ? 'הקמת אתר חדש' : 'Setup New Site'}
+                   {t.title}
                 </h3>
                 <p className="text-[10px] font-bold text-brand-charcoal/40 mt-1 uppercase tracking-widest">{org.slug}</p>
              </div>
@@ -101,8 +130,8 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
           {step === 1 ? (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                <div className="text-center space-y-2">
-                  <h4 className="text-2xl font-black text-brand-dark">{isRtl ? 'מהם צבעי המותג?' : 'Brand Colors'}</h4>
-                  <p className="text-brand-charcoal/50 text-sm">{isRtl ? 'בחרו 4 צבעים שיובילו את העיצוב' : 'Select 4 colors to lead the design'}</p>
+                  <h4 className="text-2xl font-black text-brand-dark">{t.steps.colors.title}</h4>
+                  <p className="text-brand-charcoal/50 text-sm">{t.steps.colors.description}</p>
                </div>
 
                <div className="grid grid-cols-4 gap-4">
@@ -121,7 +150,7 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
                           />
                        </div>
                        <p className="text-[9px] font-black text-center text-brand-charcoal/40 uppercase tracking-tighter">
-                          {i === 0 ? 'Primary' : i === 1 ? 'Secondary' : i === 2 ? 'Accent' : 'Neutral'}
+                          {i === 0 ? t.steps.colors.primary : i === 1 ? t.steps.colors.secondary : i === 2 ? t.steps.colors.accent : t.steps.colors.neutral}
                        </p>
                     </div>
                   ))}
@@ -130,11 +159,13 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
                {/* Live Preview Sample */}
                <div className="p-6 rounded-[2.5rem] bg-brand-grey/50 flex items-center justify-around border border-brand-mint/50">
                   <div className="text-center space-y-2">
-                     <div className="px-6 py-2.5 rounded-full shadow-lg text-[10px] font-black text-white" style={{ backgroundColor: colors[0] }}>BUTTON</div>
-                     <span className="text-[9px] font-bold text-brand-charcoal/30">Action</span>
+                     <div className="px-6 py-2.5 rounded-full shadow-lg text-[10px] font-black text-white uppercase" style={{ backgroundColor: colors[0] }}>
+                        {t.steps.colors.preview.button}
+                     </div>
+                     <span className="text-[9px] font-bold text-brand-charcoal/30">{t.steps.colors.preview.action}</span>
                   </div>
                   <div className="text-center space-y-1">
-                     <h5 className="text-lg font-black" style={{ color: colors[3] }}>Title Style</h5>
+                     <h5 className="text-lg font-black" style={{ color: colors[3] }}>{t.steps.colors.preview.title}</h5>
                      <div className="h-1.5 w-12 rounded-full mx-auto" style={{ backgroundColor: colors[2] }} />
                   </div>
                </div>
@@ -142,8 +173,8 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                <div className="text-center space-y-2">
-                  <h4 className="text-2xl font-black text-brand-dark">{isRtl ? 'אילו עמודים תרצו?' : 'Choose Pages'}</h4>
-                  <p className="text-brand-charcoal/50 text-sm">{isRtl ? 'אל דאגה, תוכלו להוסיף עוד עמודים בהמשך' : 'You can add more pages later'}</p>
+                  <h4 className="text-2xl font-black text-brand-dark">{t.steps.pages.title}</h4>
+                  <p className="text-brand-charcoal/50 text-sm">{t.steps.pages.description}</p>
                </div>
 
                <div className="grid grid-cols-2 gap-4">
@@ -159,7 +190,7 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
                             <opt.icon size={20} />
                          </div>
                          <span className={`font-black text-sm ${isSelected ? 'text-brand-dark' : 'text-brand-charcoal/40'}`}>{opt.label}</span>
-                         {isSelected && <Check size={18} className="mr-auto text-brand-main" />}
+                         {isSelected && <Check size={18} className={`${isRtl ? 'mr-auto' : 'ml-auto'} text-brand-main`} />}
                       </button>
                     );
                   })}
@@ -176,11 +207,11 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
               className="flex items-center gap-2 px-6 py-4 font-black text-brand-dark hover:bg-white rounded-2xl transition-all cursor-pointer"
             >
                {isRtl ? <ArrowRight size={18}/> : <ArrowLeft size={18}/>}
-               {isRtl ? 'חזרה' : 'Back'}
+               {t.buttons.back}
             </button>
           ) : (
             <button onClick={onClose} className="px-6 py-4 font-black text-brand-charcoal/40 hover:text-brand-dark transition-colors cursor-pointer">
-              {isRtl ? 'ביטול' : 'Cancel'}
+              {t.buttons.cancel}
             </button>
           )}
 
@@ -189,7 +220,7 @@ export default function CreateSiteWizard({ org, isRtl, onClose, onComplete }: Cr
             disabled={loading}
             className="flex-1 max-w-[200px] bg-brand-main text-white py-4 rounded-2xl font-black shadow-xl hover:bg-brand-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
           >
-            {loading ? <Loader2 className="animate-spin" size={20}/> : (step === 1 ? (isRtl ? 'המשך' : 'Continue') : (isRtl ? 'יצירת האתר' : 'Finish'))}
+            {loading ? <Loader2 className="animate-spin" size={20}/> : (step === 1 ? t.buttons.continue : t.buttons.finish)}
             {!loading && (step === 1 ? (isRtl ? <ArrowLeft size={18}/> : <ArrowRight size={18}/>) : <Check size={18}/>)}
           </button>
         </div>

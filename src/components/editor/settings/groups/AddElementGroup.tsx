@@ -10,35 +10,40 @@ import {
   Layout, 
   Box
 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 interface AddElementGroupProps {
   onAddElement: (type: string) => void;
-  allowedElements?: string[]; // אופציונלי: להגביל אלמנטים לפי סוג סקשן
+  allowedElements?: string[];
 }
 
 export const AddElementGroup = ({ onAddElement, allowedElements }: AddElementGroupProps) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   
-  // הגדרת סוגי האלמנטים הזמינים
+  // הגדרת סוגי האלמנטים - הלייבלים נשלפים מהתרגום
   const elementTypes = [
-    { id: 'heading', label: 'Heading', icon: Type, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 'paragraph', label: 'Text', icon: ParagraphIcon, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'button', label: 'Button', icon: MousePointer2, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { id: 'spacer', label: 'Spacer', icon: Layout, color: 'text-slate-400', bg: 'bg-slate-50' },
-    { id: 'image', label: 'Image', icon: Box, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'divider', label: 'Divider', icon: Square, color: 'text-rose-400', bg: 'bg-rose-50' },
+    { id: 'heading', label: t.editor.groups.addElement.labels.heading, icon: Type, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { id: 'paragraph', label: t.editor.groups.addElement.labels.paragraph, icon: ParagraphIcon, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'button', label: t.editor.groups.addElement.labels.button, icon: MousePointer2, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { id: 'spacer', label: t.editor.groups.addElement.labels.spacer, icon: Layout, color: 'text-slate-400', bg: 'bg-slate-50' },
+    { id: 'image', label: t.editor.groups.addElement.labels.image, icon: Box, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { id: 'divider', label: t.editor.groups.addElement.labels.divider, icon: Square, color: 'text-rose-400', bg: 'bg-rose-50' },
   ];
 
-  // סינון אלמנטים אם הוגדרה רשימה מותרת
   const filteredElements = allowedElements 
     ? elementTypes.filter(el => allowedElements.includes(el.id))
     : elementTypes;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       {/* כותרת הקבוצה */}
-      <div className="flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6">
+      <div className={`flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6 ${lang === 'he' ? 'text-right' : 'text-left'}`}>
         <Plus size={14} className="text-brand-indigo" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">Add Element</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">
+          {t.editor.groups.addElement.title}
+        </span>
       </div>
 
       {/* Grid של אלמנטים */}
@@ -62,7 +67,7 @@ export const AddElementGroup = ({ onAddElement, allowedElements }: AddElementGro
         
         <div className="mt-4 pt-4 border-t border-brand-lavender/30">
           <p className="text-[8px] opacity-40 italic text-center leading-relaxed px-4 uppercase font-bold">
-            Click an element to inject it into your section
+            {t.editor.groups.addElement.instruction}
           </p>
         </div>
       </div>

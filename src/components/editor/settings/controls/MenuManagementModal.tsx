@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Toast, { ToastType } from '@/components/ui/Toast';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 // הגדרת ה-Props לפי הסטנדרט של ה-Sidebar
 interface MenuManagementModalProps {
@@ -60,6 +62,8 @@ export default function MenuManagementModal({
   site, 
   setSite 
 }: MenuManagementModalProps) {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const [mounted, setMounted] = useState(false);
   const [menus, setMenus] = useState<any[]>([]);
   const [activeMenu, setActiveMenu] = useState<any>(null);
@@ -99,8 +103,8 @@ const loadMenus = async () => {
       if (!activeMenu && data.length > 0) setActiveMenu(data[0]);
     }
   } catch (err) {
-    console.error("Error loading menus:", err);
-    showToast("Error loading menus", "error");
+    console.error(t.editor.modals.menuManager.toasts.loadError, err);
+    showToast(t.editor.modals.menuManager.toasts.loadError, "error");
   } finally {
     setLoading(false);
   }
@@ -111,7 +115,7 @@ const loadMenus = async () => {
   
   try {
     const newMenu = {
-      name: customName || "New Menu",
+      name: customName || t.editor.modals.menuManager.defaults.newMenu,
       site_id: siteId, // שינוי שם העמודה
       menu_data: customData || { categories: [] },
       menu_availability: DEFAULT_AVAILABILITY 
@@ -128,11 +132,11 @@ const loadMenus = async () => {
       if (data) {
         setMenus(prev => [data, ...prev]);
         setActiveMenu(data);
-        showToast(customName ? `Menu "${customName}" imported!` : "New menu created!");
+        showToast(customName ? t.editor.modals.menuManager.toasts.importSuccess : t.editor.modals.menuManager.toasts.createSuccess);
         return data;
       }
     } catch (err) {
-      showToast("Failed to create menu", "error");
+      showToast(t.editor.modals.menuManager.toasts.createError, "error");
       return null;
     }
   };
@@ -150,11 +154,11 @@ const loadMenus = async () => {
           return {
             categories: source.map((cat: any) => ({
               id: crypto.randomUUID(),
-              name: cat.name || "Unnamed Category",
+              name: cat.name || t.editor.modals.menuManager.defaults.unnamedCategory,
               description: cat.description || "",
               items: (cat.children || cat.items || []).map((item: any) => ({
                 id: crypto.randomUUID(),
-                name: item.name || "Unnamed Item",
+                name: item.name || t.editor.modals.menuManager.defaults.unnamedItem,
                 price: item.price?.toString() || "0",
                 description: item.description || "",
                 image_url: item.image_url || item.imageUrl || item.image || ""
@@ -163,18 +167,18 @@ const loadMenus = async () => {
           };
         };
 
-        const menuName = prompt("Enter a name for the imported menu:", "Imported Menu");
+        const menuName = prompt(t.editor.modals.menuManager.placeholders.importPrompt, t.editor.modals.menuManager.placeholders.importedMenuDefault);
         if (menuName) {
           const formattedData = parseExternalMenu(rawJson);
           if (formattedData.categories.length === 0) {
-            showToast("No data found in JSON", "error");
+            showToast(t.editor.modals.menuManager.toasts.noJsonData, "error");
             return;
           }
           const created = await handleCreateNew(menuName, formattedData);
           if (created && fileInputRef.current) fileInputRef.current.value = '';
         }
       } catch (err) {
-        showToast("Failed to parse JSON file", "error");
+        showToast(t.editor.modals.menuManager.toasts.parseError, "error");
       }
     };
     reader.readAsText(file);
@@ -190,7 +194,7 @@ const loadMenus = async () => {
   const addCategory = () => {
     const newCategory: MenuCategory = {
       id: crypto.randomUUID(),
-      name: "New Category",
+      name: t.editor.modals.menuManager.defaults.newCategory,
       description: "",
       items: []
     };
@@ -200,7 +204,7 @@ const loadMenus = async () => {
   const addItem = (categoryId: string) => {
     const newItem: MenuItem = {
       id: crypto.randomUUID(),
-      name: "New Item",
+      name: t.editor.modals.menuManager.defaults.newItem,
       price: "0",
       description: "",
       image_url: ""
@@ -225,19 +229,19 @@ const loadMenus = async () => {
       .eq('id', activeMenu.id);
 
     if (!error) {
-      showToast("All changes saved to cloud");
+      showToast(t.editor.modals.menuManager.toasts.saveSuccess);
       await loadMenus();
     } else {
-      showToast("Error saving changes", "error");
+      showToast(t.editor.modals.menuManager.toasts.saveError, "error");
     }
     setLoading(false);
   };
 
   const deleteMenu = async (id: string) => {
-    if (!confirm("Are you sure? This will delete the entire menu.")) return;
+    if (!confirm(t.editor.modals.menuManager.actions.deleteConfirm)) return;
     const { error } = await supabase.from('organization_menus').delete().eq('id', id);
     if (!error) {
-      showToast("Menu deleted permanently", "info");
+      showToast(t.editor.modals.menuManager.toasts.deleteSuccess, "info");
       const updated = menus.filter(m => m.id !== id);
       setMenus(updated);
       setActiveMenu(updated[0] || null);
@@ -265,7 +269,7 @@ const loadMenus = async () => {
   if (!isOpen || !mounted) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[60px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[60px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       
       {toast && (
         <Toast 
@@ -282,9 +286,9 @@ const loadMenus = async () => {
           <div>
             <h2 className="text-2xl font-black text-brand-dark tracking-tighter flex items-center gap-2">
               <Utensils className="text-brand-main" size={24} />
-              Menu Center
+              {t.editor.modals.menuManager.title}
             </h2>
-            <p className="text-[11px] font-bold text-brand-charcoal/30 uppercase tracking-widest">Global Assets Management</p>
+            <p className="text-[11px] font-bold text-brand-charcoal/50 uppercase tracking-widest">{t.editor.modals.menuManager.subtitle}</p>
           </div>
           <div className="flex items-center gap-3">
              <input type="file" ref={fileInputRef} onChange={handleImportJson} accept=".json" className="hidden" />
@@ -292,13 +296,13 @@ const loadMenus = async () => {
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 bg-brand-grey text-brand-dark px-5 py-2.5 rounded-xl font-bold hover:bg-brand-mint/20 transition-all text-sm shadow-sm"
              >
-               <FileJson size={18} /> Import JSON
+               <FileJson size={18} /> {t.editor.modals.menuManager.actions.import}
              </button>
              <button 
                 onClick={() => handleCreateNew()} 
                 className="flex items-center gap-2 bg-brand-main text-white px-5 py-2.5 rounded-xl font-black hover:shadow-lg hover:shadow-brand-main/20 transition-all text-sm"
              >
-               <Plus size={20} /> Create Menu
+               <Plus size={20} /> {t.editor.modals.menuManager.actions.create}
              </button>
              <div className="w-px h-8 bg-brand-lavender/30 mx-2" />
              <button onClick={onClose} className="p-2.5 bg-brand-grey hover:bg-red-50 hover:text-red-500 rounded-full transition-all">
@@ -310,19 +314,20 @@ const loadMenus = async () => {
         {/* שאר תוכן המודאל ללא שינוי פונקציונלי */}
         <div className="flex-1 flex overflow-hidden">
           <div className="w-64 bg-white border-r border-brand-lavender/20 p-5 overflow-y-auto space-y-2 custom-scrollbar">
-            <p className="text-[10px] font-black text-brand-charcoal/20 uppercase tracking-widest px-2 mb-4">Library</p>
+            <p className="text-[10px] font-black text-brand-charcoal/20 uppercase tracking-widest px-2 mb-4">{t.editor.modals.menuManager.libraryLabel}</p>
             {menus.map(m => (
               <div key={m.id} className="group relative">
                 <button 
                   onClick={() => { setActiveMenu(m); setActiveTab('content'); }}
-                  className={`w-full text-left p-3.5 rounded-xl font-bold text-sm transition-all flex items-center gap-3 ${activeMenu?.id === m.id ? 'bg-brand-main/10 text-brand-main' : 'hover:bg-brand-grey text-brand-dark'}`}
+                  className={`w-full text-end p-3.5 rounded-xl font-bold text-sm transition-all flex items-center gap-3 ${activeMenu?.id === m.id ? 'bg-brand-main/10 text-brand-main' : 'hover:bg-brand-grey text-brand-dark'}`}
                 >
                   <div className={`w-2 h-2 rounded-full ${activeMenu?.id === m.id ? 'bg-brand-main animate-pulse' : 'bg-brand-lavender'}`} />
                   <span className="truncate">{m.name}</span>
                 </button>
                 <button 
                   onClick={() => deleteMenu(m.id)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-brand-charcoal/20 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                  // שימוש בתנאי מפורש: בעברית הצמד לשמאל (left), באנגלית הצמד לימין (right)
+                  className={`absolute ${lang === 'he' ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 p-1.5 text-brand-charcoal/20 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all`}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -339,13 +344,13 @@ const loadMenus = async () => {
                     onClick={() => setActiveTab('content')}
                     className={`px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'content' ? 'bg-brand-dark text-white' : 'bg-white text-brand-charcoal/40 hover:bg-brand-lavender/20'}`}
                   >
-                    Content
+                    {t.editor.modals.menuManager.tabs.content}
                   </button>
                   <button 
                     onClick={() => setActiveTab('availability')}
                     className={`px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'availability' ? 'bg-brand-dark text-white' : 'bg-white text-brand-charcoal/40 hover:bg-brand-lavender/20'}`}
                   >
-                    Availability
+                    {t.editor.modals.menuManager.tabs.availability}
                   </button>
                 </div>
 
@@ -357,17 +362,17 @@ const loadMenus = async () => {
                           value={activeMenu.name}
                           onChange={e => setActiveMenu({...activeMenu, name: e.target.value})}
                           className="text-3xl font-black text-brand-dark bg-transparent border-none outline-none focus:text-brand-main w-full tracking-tighter"
-                          placeholder="Menu Name"
+                          placeholder={t.editor.modals.menuManager.placeholders.menuName}
                         />
                         <input 
                           value={activeMenu.description || ''}
                           onChange={e => setActiveMenu({...activeMenu, description: e.target.value})}
                           className="text-sm font-bold text-brand-charcoal/40 bg-transparent border-none outline-none w-full mt-1"
-                          placeholder="Add a short description..."
+                          placeholder={t.editor.modals.menuManager.placeholders.description}
                         />
                       </div>
                       <button onClick={saveToDatabase} disabled={loading} className="flex items-center gap-2 bg-brand-main text-white px-8 py-3.5 rounded-2xl font-black hover:scale-105 transition-all shadow-lg shadow-brand-main/20">
-                        {loading ? '...' : <><Save size={18} /> Save Menu</>}
+                        {loading ? '...' : <><Save size={18} /> {loading ? t.editor.modals.menuManager.actions.saving : t.editor.modals.menuManager.actions.save}</>}
                       </button>
                     </div>
 
@@ -409,7 +414,7 @@ const loadMenus = async () => {
                                           updateActiveMenuData(updated);
                                         }}
                                         className="font-black text-brand-dark bg-transparent outline-none flex-1 text-lg"
-                                        placeholder="Dish Name"
+                                        placeholder={t.editor.modals.menuManager.placeholders.dishName}
                                       />
                                       <div className="flex items-center gap-1 bg-brand-grey px-3 py-1.5 rounded-lg border border-brand-lavender/30 w-32 shadow-inner">
                                         <DollarSign size={14} className="text-brand-main" />
@@ -437,11 +442,12 @@ const loadMenus = async () => {
                                         updateActiveMenuData(updated);
                                       }}
                                       className="text-xs font-bold text-brand-charcoal/40 bg-transparent outline-none w-full resize-none h-12"
-                                      placeholder="Description..."
+                                      placeholder={t.editor.modals.menuManager.placeholders.dishDescription}
                                     />
                                     <div className="flex items-center gap-2 bg-brand-grey/50 p-2.5 rounded-lg border border-dashed border-brand-lavender/60">
                                       <LinkIcon size={12} className="text-brand-main" />
                                       <input 
+                                        dir='ltr'
                                         value={item.image_url || ''}
                                         onChange={e => {
                                           const updated = [...activeMenu.menu_data.categories];
@@ -449,7 +455,7 @@ const loadMenus = async () => {
                                           updateActiveMenuData(updated);
                                         }}
                                         className="text-[10px] font-bold text-brand-charcoal/60 bg-transparent outline-none w-full"
-                                        placeholder="Image URL (https://...)"
+                                        placeholder={t.editor.modals.menuManager.placeholders.imageUrl}
                                       />
                                     </div>
                                   </div>
@@ -457,58 +463,77 @@ const loadMenus = async () => {
                               </div>
                             ))}
                             <button onClick={() => addItem(category.id)} className="w-full py-3.5 border-2 border-dashed border-brand-lavender/40 rounded-xl text-brand-main/60 font-black flex items-center justify-center gap-2 hover:bg-brand-main/5 hover:border-brand-main/40 transition-all text-sm">
-                              <Plus size={18} /> Add Item
+                              <Plus size={18} /> {t.editor.modals.menuManager.actions.addItem}
                             </button>
                           </div>
                         </div>
                       ))}
                       <button onClick={addCategory} className="w-full py-10 bg-white border-2 border-brand-main border-dashed rounded-[2.5rem] text-brand-main font-black flex flex-col items-center justify-center gap-2 hover:bg-brand-main/5 transition-all shadow-sm">
                         <div className="p-3 bg-brand-main/10 rounded-full"><Plus size={24} /></div>
-                        <span className="text-sm">Add Category</span>
+                        <span className="text-sm">{t.editor.modals.menuManager.actions.addCategory}</span>
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div className="space-y-4">
-                    {Object.keys(DEFAULT_AVAILABILITY).map(day => {
-                      const dayData = (activeMenu.menu_availability || DEFAULT_AVAILABILITY)[day];
-                      return (
-                        <div key={day} className={`flex items-center gap-6 p-4 rounded-2xl border transition-all ${dayData.active ? 'bg-brand-pearl/40 border-brand-main/20' : 'bg-brand-grey/30 border-transparent opacity-60'}`}>
-                          <div className="flex items-center gap-4 w-32 shrink-0">
-                             <input 
-                               type="checkbox" 
-                               checked={dayData.active} 
-                               onChange={() => toggleDay(day)}
-                               className="w-5 h-5 rounded-md accent-brand-main cursor-pointer"
-                             />
-                             <span className="font-black text-sm text-brand-dark">{day}</span>
-                          </div>
-                          {dayData.active && (
-                            <div className="flex items-center gap-4 flex-1 animate-in slide-in-from-left-2">
-                              <div className="flex items-center gap-2 flex-1">
-                                <span className="text-[10px] font-black uppercase text-brand-charcoal/30">From</span>
-                                <input 
-                                  type="time" 
-                                  value={dayData.start}
-                                  onChange={(e) => updateDayTime(day, 'start', e.target.value)}
-                                  className="bg-white p-2 rounded-lg border border-brand-lavender/50 font-bold text-sm outline-none focus:border-brand-main"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2 flex-1">
-                                <span className="text-[10px] font-black uppercase text-brand-charcoal/30">Until</span>
-                                <input 
-                                  type="time" 
-                                  value={dayData.end}
-                                  onChange={(e) => updateDayTime(day, 'end', e.target.value)}
-                                  className="bg-white p-2 rounded-lg border border-brand-lavender/50 font-bold text-sm outline-none focus:border-brand-main"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+<div className="space-y-4">
+  {Object.keys(DEFAULT_AVAILABILITY).map((day) => {
+    const dayData = (activeMenu.menu_availability || DEFAULT_AVAILABILITY)[day];
+    
+    // שליפת שם היום המתורגם מתוך ה-structure שקיים ב-t
+    const translatedDay = t.editor.structure.settingsPanel.days[day as keyof typeof t.editor.structure.settingsPanel.days];
+
+    return (
+      <div 
+        key={day} 
+        className={`flex items-center gap-6 p-4 rounded-2xl border transition-all ${
+          dayData.active 
+            ? 'bg-brand-pearl/40 border-brand-main/20' 
+            : 'bg-brand-grey/30 border-transparent opacity-60'
+        }`}
+      >
+        <div className="flex items-center gap-4 w-32 shrink-0">
+          <input 
+            type="checkbox" 
+            checked={dayData.active} 
+            onChange={() => toggleDay(day)}
+            className="w-5 h-5 rounded-md accent-brand-main cursor-pointer"
+          />
+          {/* שימוש בשם היום המתורגם */}
+          <span className="font-black text-sm text-brand-dark">
+            {translatedDay}
+          </span>
+        </div>
+
+        {dayData.active && (
+          <div className="flex items-center gap-4 flex-1 animate-in slide-in-from-left-2">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-[10px] font-black uppercase text-brand-charcoal/30">
+                {t.editor.modals.menuManager.availability.from}
+              </span>
+              <input 
+                type="time" 
+                value={dayData.start}
+                onChange={(e) => updateDayTime(day, 'start', e.target.value)}
+                className="bg-white p-2 rounded-lg border border-brand-lavender/50 font-bold text-sm outline-none focus:border-brand-main"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-[10px] font-black uppercase text-brand-charcoal/30">
+                {t.editor.modals.menuManager.availability.until}
+              </span>
+              <input 
+                type="time" 
+                value={dayData.end}
+                onChange={(e) => updateDayTime(day, 'end', e.target.value)}
+                className="bg-white p-2 rounded-lg border border-brand-lavender/50 font-bold text-sm outline-none focus:border-brand-main"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  })}
+</div>
                 )}
               </div>
             ) : (
@@ -516,8 +541,8 @@ const loadMenus = async () => {
                  <div className="w-20 h-20 bg-brand-main/5 rounded-full flex items-center justify-center text-brand-main/20 mb-4">
                     <Utensils size={32} />
                  </div>
-                 <h3 className="text-xl font-black text-brand-dark">Ready to serve?</h3>
-                 <p className="text-sm font-bold text-brand-charcoal/30">Select a menu or create a new one to get started.</p>
+                 <h3 className="text-xl font-black text-brand-dark">{t.editor.modals.menuManager.emptyState.title}</h3>
+                 <p className="text-sm font-bold text-brand-charcoal/30">{t.editor.modals.menuManager.emptyState.subtitle}</p>
               </div>
             )}
           </div>

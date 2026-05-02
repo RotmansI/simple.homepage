@@ -3,6 +3,7 @@
 import React from 'react';
 import { 
   ChevronLeft, 
+  ChevronRight,
   Maximize2, 
   ImageIcon, 
   Layers, 
@@ -15,6 +16,8 @@ import { DimensionsGroup } from './settings/groups/DimensionsGroup';
 import { HeroSliderGroup } from './settings/groups/HeroSliderGroup';
 import { EdgeEffectsGroup } from './settings/groups/EdgeEffectsGroup';
 import { ContentManagerGroup } from './settings/groups/ContentManagerGroup';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 interface HeroSettingsProps {
   site: any; 
@@ -44,7 +47,9 @@ export const HeroSettings = ({
   activePageKey, 
   pages
 }: HeroSettingsProps) => {
-  
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
+
   const content = selectedSection.content;
   const currentElement = content.elements?.find((e: any) => e.id === selectedFlexElementId);
 
@@ -67,13 +72,13 @@ export const HeroSettings = ({
     };
 
     if (type === 'heading') { 
-        newEl.text = 'New Hero Title'; 
+        newEl.text = t.editor.sidebar.sections.defaults.title; 
     }
     else if (type === 'paragraph') { 
-        newEl.text = 'New description text...'; 
+        newEl.text = t.editor.sidebar.sections.defaults.description; 
     }
     else if (type === 'button') { 
-        newEl.text = 'Click Me'; 
+        newEl.text = t.editor.sidebar.sections.defaults.button; 
         newEl.bg_color = primaryColor; 
     }
 
@@ -95,19 +100,23 @@ export const HeroSettings = ({
     );
   }
 
-  const pageName = pages[activePageKey]?.name || "Page";
+  const pageName = pages[activePageKey]?.name || t.editor.sidebar.sections.page;
 
   return (
-    <div className="space-y-2 text-start animate-in fade-in duration-300 pb-20">
+    <div className="space-y-2 text-start animate-in fade-in duration-300 pb-20" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       <button 
-        onClick={onBackToPage}
-        className="flex items-center gap-2 px-1 py-1 text-brand-indigo hover:text-brand-indigo/70 transition-all group mb-4"
-      >
-        <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-        <span className="text-[10px] font-black uppercase tracking-tight">
-          Back to <span className="underline decoration-brand-indigo/30 underline-offset-2">{pageName}</span>
-        </span>
-      </button>
+              onClick={onBackToPage}
+              className="flex items-center gap-2 px-1 py-1 text-brand-indigo hover:text-brand-indigo/70 transition-all group mb-4"
+            >
+              {lang === 'he' ? (
+                <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+              ) : (
+                <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+              )}
+              <span className="text-[10px] font-black uppercase tracking-tight">
+                {t.editor.sidebar.sections.backToPage} <span className="underline decoration-brand-indigo/30 underline-offset-2">{pageName}</span>
+              </span>
+            </button>
 
       <div className="mb-6">
         <SectionBasicGroup 
@@ -118,11 +127,11 @@ export const HeroSettings = ({
       </div>
 
       <div className="flex flex-col">
-        <SettingsCollapse label="Dimensions" icon={<Maximize2 size={14}/>}>
+        <SettingsCollapse label={t.editor.sidebar.sections.groups.dimensions} icon={<Maximize2 size={14}/>}>
           <DimensionsGroup content={content} updateContent={updateContent} site={site}/>
         </SettingsCollapse>
 
-        <SettingsCollapse label="Background Slider" icon={<ImageIcon size={14}/>} defaultOpen={true}>
+        <SettingsCollapse label={t.editor.sidebar.sections.groups.slider} icon={<ImageIcon size={14}/>} defaultOpen={true}>
           <HeroSliderGroup 
             content={content}
             updateContent={updateContent}
@@ -133,11 +142,11 @@ export const HeroSettings = ({
           />
         </SettingsCollapse>
 
-        <SettingsCollapse label="Edge Effects" icon={<Layers size={14}/>}>
+        <SettingsCollapse label={t.editor.sidebar.sections.groups.effects} icon={<Layers size={14}/>}>
           <EdgeEffectsGroup content={content} updateContent={updateContent} site={site}/>
         </SettingsCollapse>
 
-        <SettingsCollapse label="Section Elements" icon={<GripVertical size={14}/>} defaultOpen={true}>
+        <SettingsCollapse label={t.editor.sidebar.sections.groups.elements} icon={<GripVertical size={14}/>} defaultOpen={true}>
           <ContentManagerGroup 
             content={content}
             updateContent={updateContent}

@@ -2,22 +2,23 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Language, translations } from '@/lib/translations';
+import { Language, translations } from '@/lib/translations/index';
 import { 
   Users, Building2, ShieldAlert, Search, 
   Trash2, ChevronRight, ChevronLeft, 
   X, Loader2, UserPlus, Power, Plus, Link2, Edit3, Globe, Image as ImageIcon, ExternalLink, Upload
 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
 
 type Tab = 'operators' | 'users' | 'orgs';
 
 export default function AdminManagementPage() {
-  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('operators');
-  const lang = (searchParams.get('lang') as Language) || 'he';
-  const t = translations[lang];
+  
+  // שימוש ב-Context - זה מחליף את הצורך לנהל שפה ידנית בדף הזה
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const isRtl = lang === 'he';
 
   const [items, setItems] = useState<any[]>([]);
@@ -50,13 +51,18 @@ export default function AdminManagementPage() {
 
   const PAGE_SIZE = 10;
 
+// הוספת lang למערך התלויות (dependencies)
   useEffect(() => {
     fetchData();
     if (activeTab === 'users') fetchAllOrgs();
-  }, [activeTab, currentPage, searchTerm]);
+  }, [activeTab, currentPage, searchTerm, lang]); // <--- הוספנו את lang כאן
 
   const fetchData = async () => {
     setLoading(true);
+    
+    // הלוגיקה נשארת אותו דבר, אבל עכשיו היא תרוץ מחדש 
+    // בכל פעם ש-lang משתנה ב-Context הגלובלי
+    
     let query;
     if (activeTab === 'operators') {
       query = supabase.from('profiles').select(`*, updated_by_profile:updated_by(first_name, last_name)`, { count: 'exact' }).eq('role', 'operator');

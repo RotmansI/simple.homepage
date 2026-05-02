@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Pipette, History, Palette as PaletteIcon } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 interface SmartColorPickerProps {
   label: string;
@@ -18,6 +20,9 @@ export const SmartColorPicker = ({
   site,
   allSectionsContent 
 }: SmartColorPickerProps) => {
+
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   
   const [recentColors, setRecentColors] = useState<string[]>([]);
 
@@ -50,7 +55,7 @@ export const SmartColorPicker = ({
 
   const openEyeDropper = async () => {
     if (!(window as any).EyeDropper) {
-      alert("Your browser does not support the EyeDropper API");
+      alert(t.editor.modals.colorPicker.errors.noEyeDropper);
       return;
     }
     const eyeDropper = new (window as any).EyeDropper();
@@ -63,13 +68,13 @@ export const SmartColorPicker = ({
   };
 
   return (
-    <div className="space-y-3 text-start">
+    <div className="space-y-3 text-start" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between px-1">
         <span className="text-[9px] font-black uppercase text-brand-midnight opacity-40 tracking-wider">{label}</span>
         <button 
           onClick={openEyeDropper}
           className="p-1.5 hover:bg-brand-pearl rounded-md transition-colors text-brand-main"
-          title="Pick color from screen"
+          title={t.editor.modals.colorPicker.tooltips.eyeDropper}
         >
           <Pipette size={14} />
         </button>
@@ -103,7 +108,7 @@ export const SmartColorPicker = ({
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 opacity-30">
             <PaletteIcon size={10} />
-            <span className="text-[8px] font-bold uppercase tracking-tight">Branding Palette</span>
+            <span className="text-[8px] font-bold uppercase tracking-tight">{t.editor.modals.colorPicker.sections.branding}</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {brandingColors.map((c) => (
@@ -121,7 +126,7 @@ export const SmartColorPicker = ({
           <div className="space-y-2 pt-3 border-t border-brand-lavender/40">
             <div className="flex items-center gap-1.5 opacity-30">
               <History size={10} />
-              <span className="text-[8px] font-bold uppercase tracking-tight">Used in Page</span>
+              <span className="text-[8px] font-bold uppercase tracking-tight">{t.editor.modals.colorPicker.sections.recent}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {recentColors.map((c) => (

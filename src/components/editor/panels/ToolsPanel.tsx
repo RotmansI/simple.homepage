@@ -1,24 +1,27 @@
 "use client";
 
 import React from 'react';
-import { HardDrive, Menu, Wrench, ChevronLeft, LayoutGrid, Settings2, ListTree } from 'lucide-react';
-
+import { HardDrive, Menu, Wrench, ChevronLeft, Lightbulb, ChevronRight, LayoutGrid, Settings2, ListTree } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 interface ToolsPanelProps {
   openAssetManager: () => void;
   openMenuManager: () => void;
 }
 
 export const ToolsPanel = ({ openAssetManager, openMenuManager }: ToolsPanelProps) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   return (
-    <div className="p-6 space-y-8 text-start animate-in fade-in duration-500">
+    <div className="p-6 space-y-8 text-start animate-in fade-in duration-500" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       
       {/* Header הקדמה */}
       <div className="space-y-1">
-        <h3 className="text-[11px] font-black uppercase text-brand-main tracking-[0.2em]">System Tools</h3>
-        <p className="text-xl font-black text-brand-dark tracking-tighter">Management Center</p>
+        <h3 className="text-[11px] font-black uppercase text-brand-main tracking-[0.2em]">{t.editor.structure.toolsPanel.header.label}</h3>
+        <p className="text-xl font-black text-brand-dark tracking-tighter">{t.editor.structure.toolsPanel.header.title}</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4" dir='ltr'>
         {/* כרטיס ניהול נכסים - Asset Manager */}
         <button 
           onClick={openAssetManager}
@@ -27,11 +30,11 @@ export const ToolsPanel = ({ openAssetManager, openMenuManager }: ToolsPanelProp
           <div className="w-12 h-12 bg-brand-main/10 rounded-2xl flex items-center justify-center text-brand-main group-hover:scale-110 transition-transform">
             <HardDrive size={22} />
           </div>
-          <div className="flex-1">
-            <h4 className="text-sm font-black text-brand-dark uppercase tracking-tight">Asset Manager</h4>
-            <p className="text-[10px] font-bold text-brand-charcoal/40 uppercase tracking-widest mt-0.5">Manage your assets</p>
+          <div className="flex-1" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+            <h4 className="text-sm font-black text-brand-dark uppercase tracking-tight">{t.editor.structure.toolsPanel.assetManager.title}</h4>
+            <p className="text-[10px] font-bold text-brand-charcoal/40 uppercase tracking-widest mt-0.5">{t.editor.structure.toolsPanel.assetManager.subtitle}</p>
           </div>
-          <ChevronLeft size={16} className="text-brand-charcoal/20 group-hover:text-brand-main group-hover:translate-x-[-4px] transition-all" />
+          <ChevronRight size={16} className="text-brand-charcoal/20 group-hover:text-brand-main group-hover:translate-x-[-4px] transition-all" />
           
           {/* אפקט דקורטיבי ברקע */}
           <div className="absolute -right-4 -bottom-4 opacity-[0.03] text-brand-main pointer-events-none group-hover:opacity-[0.08] transition-opacity">
@@ -47,11 +50,11 @@ export const ToolsPanel = ({ openAssetManager, openMenuManager }: ToolsPanelProp
           <div className="w-12 h-12 bg-brand-main/10 rounded-2xl flex items-center justify-center text-brand-main group-hover:scale-110 transition-transform">
             <ListTree size={22} />
           </div>
-          <div className="flex-1">
-            <h4 className="text-sm font-black text-brand-dark uppercase tracking-tight">Menu Manager</h4>
-            <p className="text-[10px] font-bold text-brand-charcoal/40 uppercase tracking-widest mt-0.5">Manage all your offers</p>
+          <div className="flex-1" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+            <h4 className="text-sm font-black text-brand-dark uppercase tracking-tight">{t.editor.structure.toolsPanel.menuManager.title}</h4>
+            <p className="text-[10px] font-bold text-brand-charcoal/40 uppercase tracking-widest mt-0.5">{t.editor.structure.toolsPanel.menuManager.subtitle}</p>
           </div>
-          <ChevronLeft size={16} className="text-brand-charcoal/20 group-hover:text-brand-main group-hover:translate-x-[-4px] transition-all" />
+          <ChevronRight size={16} className="text-brand-charcoal/20 group-hover:text-brand-main group-hover:translate-x-[-4px] transition-all" />
 
           {/* אפקט דקורטיבי ברקע */}
           <div className="absolute -right-4 -bottom-4 opacity-[0.03] text-brand-main pointer-events-none group-hover:opacity-[0.08] transition-opacity">
@@ -63,11 +66,11 @@ export const ToolsPanel = ({ openAssetManager, openMenuManager }: ToolsPanelProp
       {/* אזור הערות/טיפ מהיר בתחתית */}
       <div className="mt-12 p-6 bg-brand-grey/50 rounded-[2.5rem] border border-brand-lavender/10">
         <div className="flex items-center gap-3 mb-2 text-brand-main">
-            <Wrench size={16} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Editor Tip</span>
+            <Lightbulb size={16} />
+            <span className="text-[10px] font-black uppercase tracking-widest">{t.editor.structure.toolsPanel.tip.label}</span>
         </div>
         <p className="text-[11px] font-bold text-brand-charcoal/50 leading-relaxed">
-          Use the <strong>Asset Manager</strong> to organize your images into folders for better performance and easier selection during editing.
+          {t.editor.structure.toolsPanel.tip.text}
         </p>
       </div>
 

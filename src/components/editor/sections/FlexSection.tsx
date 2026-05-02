@@ -9,17 +9,23 @@ import { ImageElement } from '../elements/ImageElement';
 export default function FlexSection({ 
   section, 
   isSelected, 
-  updateContent: _updateContent // שימוש בקו תחתון למניעת שגיאת 'never read'
+  site, // הוספת site לקבלת שפת האתר
+  updateContent: _updateContent 
 }: { 
   section: any, 
   isSelected?: boolean, 
+  site?: any,
   updateContent?: (updates: any) => void 
 }) {
   const { content } = section;
   
   if (!content) return null;
 
-  // 1. הגדרות הקונטיינר הראשי - סנכרון עם DimensionsGroup
+  // חילוץ שפת האתר וקביעת כיווניות
+  const siteLanguage = site?.theme_settings?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
+
+  // 1. הגדרות הקונטיינר הראשי
   const containerStyle: React.CSSProperties = {
     backgroundColor: content.is_transparent ? 'transparent' : (content.bg_color || '#ffffff'),
     backgroundImage: (!content.is_transparent && content.bg_image) ? `url(${content.bg_image})` : 'none',
@@ -29,10 +35,11 @@ export default function FlexSection({
     minHeight: '100px', 
     height: content.max_height ? `${content.max_height}px` : 'auto', 
     overflow: 'hidden',
-    transition: 'all 0.5s ease-in-out'
+    transition: 'all 0.5s ease-in-out',
+    // החלת כיווניות ברמת הקונטיינר
+    direction: isRTL ? 'rtl' : 'ltr'
   };
 
-  // 2. שכבת ה-Overlay - תיקון לוגיקה לסנכרון עם Hero (Slider Overlay)
   const overlayStyle: React.CSSProperties = {
     position: 'absolute',
     inset: 0,
@@ -48,12 +55,9 @@ export default function FlexSection({
       style={containerStyle} 
       className={`w-full relative group flex flex-col items-center transition-all ${isSelected ? 'ring-2 ring-brand-indigo ring-inset' : ''}`}
     >
-      {/* שכבת האופסיטי/פילטר */}
       <div style={overlayStyle} />
 
-      {/* 3. Edge Effects (Fades) - סנכרון מלא עם Hero */}
-      
-      {/* Top Fade */}
+      {/* 3. Edge Effects (Fades) */}
       {content.top_fade?.enabled && (
         <div 
           className="absolute top-0 left-0 w-full z-[5] pointer-events-none transition-all duration-500"
@@ -65,7 +69,6 @@ export default function FlexSection({
         />
       )}
 
-      {/* Bottom Fade */}
       {content.bottom_fade?.enabled && (
         <div 
           className="absolute bottom-0 left-0 w-full z-[5] pointer-events-none transition-all duration-500"
@@ -79,29 +82,33 @@ export default function FlexSection({
       
       {/* 4. Content Layer */}
       <div 
-        className="container mx-auto px-6 relative z-10 flex flex-col transition-all duration-500"
+        className={`container mx-auto px-6 relative z-10 flex flex-col transition-all duration-500 ${isRTL ? 'items-start text-right' : 'items-start text-left'}`}
         style={{
           paddingTop: `${content.padding_v || 80}px`,
           paddingBottom: `${content.padding_v || 80}px`,
-          maxWidth: content.content_width || '1200px' 
+          maxWidth: content.content_width || '1200px'
         }}
       >
-        <div className="flex flex-col w-full gap-2">
+        {/* יישור האלמנטים הפנימיים */}
+        <div 
+          className="flex flex-col w-full gap-2"
+          style={{ alignItems: isRTL ? 'flex-start' : 'flex-start' }} // ברירת מחדל ליישור לפי כיוון הכתיבה
+        >
           {content.elements?.map((el: any) => {
             const key = el.id;
 
             switch (el.type) {
               case 'heading':   
-                return <Heading key={key} content={el} />;
+                return <Heading key={key} content={el} site={site} />; // העברת site לאלמנטים
               
               case 'paragraph': 
-                return <Paragraph key={key} content={el} />;
+                return <Paragraph key={key} content={el} site={site} />;
               
               case 'button':    
-                return <ButtonElement key={key} content={el} />;
+                return <ButtonElement key={key} content={el} site={site} />;
               
               case 'image':     
-                return <ImageElement key={key} content={el} />;
+                return <ImageElement key={key} content={el} site={site} />;
 
               case 'spacer':    
                 return (

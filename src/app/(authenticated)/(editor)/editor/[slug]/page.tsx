@@ -23,9 +23,12 @@ import { WidgetButton } from '@/components/editor/EditorUI';
 import { getGoogleFontsUrl } from '@/utils/fonts'; // וודא שהנתיב תואם למיקום הקובץ אצלך
 import { EditorCanvas } from '@/components/editor/canvas/EditorCanvas';
 import AddSectionModal from '@/components/editor/settings/controls/AddSectionModal';
+import { useLanguage } from '@/context/LanguageContext';
 
 
 export default function EditorPage() {
+  const { lang } = useLanguage(); // הזרקת ה-Context
+  const t = translations[lang as Language];
   const { slug } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -232,9 +235,9 @@ const handleAssetSelect = (url: string) => {
 };
 
   const deleteAsset = async (fileName: string) => {
-    if (!confirm('Delete this image permanently?')) return;
+    if (!confirm(t.editor.shell.deleteAssetConfirm)) return;
     const { error } = await supabase.storage.from('site-assets').remove([`${site.id}/gallery/${fileName}`]);
-    if (error) alert("Error deleting asset");
+    if (error) alert(t.editor.shell.deleteAssetError);
     else fetchAssets();
   };
 
@@ -253,7 +256,7 @@ const handleAssetSelect = (url: string) => {
                 }))
             }));
             updateSectionContent(selectedId, { categories: [...(selectedSection.content.categories || []), ...newCategories] });
-        } catch (err) { alert("Invalid JSON structure"); }
+        } catch (err) { alert(t.editor.shell.invalidJson); }
     };
     reader.readAsText(file);
   };
@@ -267,7 +270,7 @@ const handleAssetSelect = (url: string) => {
 
   const addNewPage = (title: string) => {
     const pKey = title.toLowerCase().replace(/\s+/g, '-');
-    if (pages[pKey]) { alert("Page already exists"); return; }
+    if (pages[pKey]) { alert(t.editor.shell.pageExists); return; }
     const newPage = { title: title, name: title, sections: [] };
     setSite((prev: any) => ({ ...prev, draft_data: { ...prev.draft_data, pages: { ...prev.draft_data.pages, [pKey]: newPage } } }));
     switchPage(pKey);
@@ -320,7 +323,7 @@ const handleAssetSelect = (url: string) => {
   };
 
   const deleteSection = (id: string) => {
-    if (!confirm('Are you sure you want to delete this section?')) return;
+    if (!confirm(t.editor.shell.deleteSectionConfirm)) return;
     const updated = sections.filter((s: any) => s.id !== id);
     updateSectionsState(updated);
     if (selectedId === id) setSelectedId(null);
@@ -359,8 +362,8 @@ const handleAssetSelect = (url: string) => {
   };
 
     const deletePage = (pKey: string) => {
-    if (pKey === 'home') { alert("Cannot delete home page"); return; }
-    if (!confirm(`Delete page?`)) return;
+    if (pKey === 'home') { alert(t.editor.shell.cannotDeleteHome); return; }
+    if (!confirm(t.editor.shell.deletePageConfirm)) return;
     const newPages = { ...pages }; delete newPages[pKey];
     setSite((prev: any) => ({ ...prev, draft_data: { ...prev.draft_data, pages: newPages, active_page: 'home' } }));
     setSelectedId(null);
@@ -412,14 +415,14 @@ const handleAssetSelect = (url: string) => {
         <button 
             onClick={() => setPreviewMode('desktop')} 
             className={`p-2 rounded-lg transition-all ${previewMode === 'desktop' ? 'bg-white shadow-sm text-brand-main' : 'text-brand-charcoal/30'}`}
-            title="Desktop View"
+            title={t.editor.shell.desktopView}
         >
             <Monitor size={18} />
         </button>
         <button 
             onClick={() => setPreviewMode('mobile')} 
             className={`p-2 rounded-lg transition-all ${previewMode === 'mobile' ? 'bg-white shadow-sm text-brand-main' : 'text-brand-charcoal/30'}`}
-            title="Mobile View"
+            title={t.editor.shell.mobileView}
         >
             <Smartphone size={18} />
         </button>
@@ -440,18 +443,21 @@ const handleAssetSelect = (url: string) => {
                     ? 'bg-brand-main text-white shadow-md' 
                     : 'bg-white/50 text-brand-charcoal/40 hover:bg-white hover:text-brand-main'
             }`}
-            title={activePanel === 'navbar' ? "Cannot collapse in Nav mode" : "Zen Mode"}
+            title={activePanel === 'navbar' ? t.editor.shell.navModeWarning : t.editor.shell.zenMode}
         >
             {isZenModeActive ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
         </button>
     </div>
 </div>
             <div className="flex items-center gap-3">
-                <button onClick={() => handleSave(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-black text-brand-main hover:bg-brand-mint rounded-xl transition-all"><Eye size={16} /> Preview</button>
-                <button onClick={() => handleSave(false)} disabled={saving} className="bg-brand-main text-white px-6 py-2.5 rounded-xl font-black shadow-lg flex items-center gap-2 min-w-[100px] justify-center">
-                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save
-                </button>
-            </div>
+              <button onClick={() => handleSave(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-black text-brand-main hover:bg-brand-mint rounded-xl transition-all">
+                  <Eye size={16} /> {t.editor.shell.preview}
+              </button>
+              <button onClick={() => handleSave(false)} disabled={saving} className="bg-brand-main text-white px-6 py-2.5 rounded-xl font-black shadow-lg flex items-center gap-2 min-w-[100px] justify-center">
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
+                  {saving ? t.editor.shell.saving : t.editor.shell.save}
+              </button>
+          </div>
         </header>
 
         <div className="flex-1 flex h-screen overflow-hidden">

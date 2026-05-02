@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Trash2, Calendar, HardDrive, Save, ArrowLeft, Move, Loader2, ExternalLink, Info, Check, Link as LinkIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 export const AssetDetailView = ({ 
   asset, 
@@ -14,6 +16,8 @@ export const AssetDetailView = ({
   showToast,
   allSections = [] 
 }: any) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
@@ -47,7 +51,7 @@ export const AssetDetailView = ({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      showToast("File name cannot be empty", "error");
+      showToast(t.editor.modals.assetManager.assetDetail.errors.emptyName, "error");
       return;
     }
 
@@ -65,26 +69,26 @@ export const AssetDetailView = ({
         if (deleteError) console.error("Cleanup error:", deleteError);
       }
 
-      showToast("Asset updated successfully", "success");
+      showToast(t.editor.modals.assetManager.assetDetail.success.updated, "success");
       onUpdated(); 
     } catch (err: any) {
-      showToast(err.message || "Update failed", "error");
+      showToast(err.message || t.editor.modals.assetManager.assetDetail.errors.updateFailed, "error");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to permanently delete "${asset.name}"?`)) return;
+    if (!confirm(`${t.editor.modals.assetManager.assetGrid.deleteFolderConfirm} "${asset.name}"?`)) return;
     setIsDeleting(true);
     try {
       const storagePath = `${siteId}/${currentPath ? currentPath + '/' : ''}${asset.name}`;
       const { error } = await supabase.storage.from('site-assets').remove([storagePath]);
       if (error) throw error;
-      showToast("Asset deleted permanently", "success");
+      showToast(t.editor.modals.assetManager.assetDetail.success.deleted, "success");
       onDeleted();
     } catch (err: any) {
-      showToast(err.message || "Failed to delete", "error");
+      showToast(err.message || t.editor.modals.assetManager.assetDetail.errors.deleteFailed, "error");
     } finally {
       setIsDeleting(false);
     }
@@ -103,7 +107,7 @@ export const AssetDetailView = ({
                 className="flex items-center gap-2 text-[10px] font-black uppercase text-brand-dark bg-white px-4 py-2.5 rounded-xl shadow-md hover:text-brand-main transition-all border border-brand-lavender/10 group active:scale-95"
             >
                 <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
-                Back to Library
+                {t.editor.modals.assetManager.assetDetail.back}
             </button>
 
             <button 
@@ -132,8 +136,8 @@ export const AssetDetailView = ({
       <div className="w-[400px] border-l border-brand-lavender/20 p-8 flex flex-col text-start overflow-y-auto custom-scrollbar bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.01)] z-30 shrink-0">
         <div className="mb-8 flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-black text-brand-dark tracking-tighter">Asset Control</h3>
-            <p className="text-[10px] font-bold text-brand-charcoal/30 uppercase mt-1 tracking-widest leading-none">Metadata & Live Status</p>
+            <h3 className="text-xl font-black text-brand-dark tracking-tighter">{t.editor.modals.assetManager.assetDetail.controlTitle}</h3>
+            <p className="text-[10px] font-bold text-brand-charcoal/30 uppercase mt-1 tracking-widest leading-none">{t.editor.modals.assetManager.assetDetail.controlSubtitle}</p>
           </div>
           <button onClick={onBack} className="p-2 hover:bg-brand-grey rounded-full transition-all text-brand-charcoal/20">
             <X size={20} />
@@ -144,17 +148,17 @@ export const AssetDetailView = ({
           {/* עריכת קובץ */}
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">Rename File</label>
+              <label className="text-[9px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">{t.editor.modals.assetManager.assetDetail.renameLabel}</label>
               <input 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full bg-brand-grey/50 p-4 rounded-xl font-bold text-sm text-brand-dark outline-none focus:ring-2 ring-brand-main transition-all border-none"
-                placeholder="Enter new name..."
+                placeholder={t.editor.modals.assetManager.assetDetail.renamePlaceholder}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">Move Path</label>
+              <label className="text-[9px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">{t.editor.modals.assetManager.assetDetail.moveLabel}</label>
               <div className="relative">
                 <input 
                   value={targetPath}
@@ -170,10 +174,10 @@ export const AssetDetailView = ({
           <div className="pt-6 border-t border-brand-lavender/10">
             <div className="flex items-center justify-between mb-4">
                 <label className="text-[9px] font-black uppercase text-brand-charcoal/40 flex items-center gap-2 tracking-widest">
-                    <LinkIcon size={12} className="text-brand-main" /> Usage Locations
+                    <LinkIcon size={12} className="text-brand-main" /> {t.editor.modals.assetManager.assetDetail.usageLabel}
                 </label>
                 <span className="bg-brand-main/10 text-brand-main text-[8px] font-black px-2 py-0.5 rounded-full uppercase">
-                    {usageLocations.length} Hits
+                    {usageLocations.length} {t.editor.modals.assetManager.assetDetail.hits}
                 </span>
             </div>
             
@@ -195,7 +199,7 @@ export const AssetDetailView = ({
               <div className="p-8 border-2 border-dashed border-brand-grey rounded-[2rem] flex flex-col items-center justify-center text-center">
                 <Info size={20} className="text-brand-charcoal/20 mb-2" />
                 <p className="text-[9px] font-bold text-brand-charcoal/40 uppercase tracking-widest leading-relaxed">
-                    Not in use<br/>on your site.
+                    {t.editor.modals.assetManager.assetDetail.notInUse}
                 </p>
               </div>
             )}
@@ -205,12 +209,12 @@ export const AssetDetailView = ({
           <div className="grid grid-cols-2 gap-4 pt-4">
              <div className="bg-brand-grey/30 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
                 <Calendar size={14} className="text-brand-main mb-2" />
-                <p className="text-[8px] font-black text-brand-charcoal/40 uppercase tracking-widest mb-1">Uploaded</p>
+                <p className="text-[8px] font-black text-brand-charcoal/40 uppercase tracking-widest mb-1">{t.editor.modals.assetManager.assetDetail.technical.uploaded}</p>
                 <p className="text-[10px] font-bold text-brand-dark">{new Date(asset.created_at).toLocaleDateString()}</p>
              </div>
              <div className="bg-brand-grey/30 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
                 <HardDrive size={14} className="text-brand-main mb-2" />
-                <p className="text-[8px] font-black text-brand-charcoal/40 uppercase tracking-widest mb-1">Format</p>
+                <p className="text-[8px] font-black text-brand-charcoal/40 uppercase tracking-widest mb-1">{t.editor.modals.assetManager.assetDetail.technical.format}</p>
                 <p className="text-[10px] font-bold text-brand-dark uppercase">{asset.name.split('.').pop()}</p>
              </div>
           </div>
@@ -223,7 +227,7 @@ export const AssetDetailView = ({
             disabled={isSaving}
             className="w-full py-4 bg-brand-main text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-brand-main/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
           >
-            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Update Asset</>}
+            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> {t.editor.modals.assetManager.assetDetail.updateBtn}</>}
           </button>
           
           <button 
@@ -231,7 +235,7 @@ export const AssetDetailView = ({
             disabled={isDeleting}
             className="w-full py-4 bg-red-50 text-red-500 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 active:scale-95"
           >
-            {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <><Trash2 size={16} /> Delete Asset</>}
+            {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <><Trash2 size={16} /> {t.editor.modals.assetManager.assetDetail.deleteBtn}</>}
           </button>
         </div>
       </div>

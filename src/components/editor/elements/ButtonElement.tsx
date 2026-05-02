@@ -5,7 +5,6 @@ import React, { useState } from 'react';
 const getContrastColor = (hexColor: string) => {
   if (!hexColor || hexColor === 'transparent') return '#ffffff';
   
-  // הסרת # אם קיים
   const hex = hexColor.replace('#', '');
   if (hex.length < 6) return '#ffffff';
 
@@ -17,10 +16,20 @@ const getContrastColor = (hexColor: string) => {
   return (yiq >= 128) ? '#000000' : '#ffffff';
 };
 
-export const ButtonElement = ({ content }: { content: any }) => {
+// הוספת Type ל-Props כולל site
+interface ButtonElementProps {
+  content: any;
+  site?: any;
+}
+
+export const ButtonElement = ({ content, site }: ButtonElementProps) => {
   const [isHovered, setIsHovered] = useState(false);
   
   if (!content) return null;
+
+  // שליפת שפת האתר
+  const siteLanguage = site?.theme_settings?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
 
   const {
     text = 'Click Me',
@@ -60,7 +69,9 @@ export const ButtonElement = ({ content }: { content: any }) => {
     is_outline
   } = content;
 
-  const finalAlign = align || text_align || 'left';
+  // לוגיקת יישור: עדיפות ל-align, אז ל-text_align, ואם אין - לפי שפת האתר
+  const finalAlign = align || text_align || (isRTL ? 'right' : 'left');
+  
   const defaultBg = '#4F46E5'; 
   const currentBgColor = bg_color || defaultBg;
 
@@ -68,13 +79,11 @@ export const ButtonElement = ({ content }: { content: any }) => {
   let baseBg, baseTextColor, baseBorderColor, baseBorderW;
 
   if (is_outline) {
-    // מצב Outline: רקע 40% שקיפות (66 ב-HEX), טקסט ובורדר בצבע מלא
     baseBg = currentBgColor.startsWith('#') ? `${currentBgColor}44` : currentBgColor;
     baseTextColor = currentBgColor;
     baseBorderColor = currentBgColor;
     baseBorderW = border_width || 2;
   } else {
-    // מצב רגיל: רקע מלא, טקסט מנוגד (אלא אם הוגדר צבע טקסט ספציפי)
     baseBg = currentBgColor;
     baseTextColor = text_color || getContrastColor(currentBgColor);
     baseBorderColor = border_color || 'transparent';
@@ -88,7 +97,6 @@ export const ButtonElement = ({ content }: { content: any }) => {
 
   if (isHovered && hover_enabled && hover_type === 'colors_swap') {
     if (is_outline) {
-      // ב-Hover של אאוטליין: מעלים מעט את האופסיטי של הרקע או משתמשים בצבע שנבחר
       currentBg = hover_bg_color || (currentBgColor.startsWith('#') ? `${currentBgColor}88` : currentBgColor);
       currentTextColor = hover_text_color || baseTextColor;
       currentBorderColor = hover_border_color || baseBorderColor;
@@ -135,7 +143,8 @@ export const ButtonElement = ({ content }: { content: any }) => {
     justifyContent: 'center',
     outline: 'none',
     boxSizing: 'border-box',
-    zIndex: isHovered ? 10 : 1
+    zIndex: isHovered ? 10 : 1,
+    direction: isRTL ? 'rtl' : 'ltr' // הבטחת כיווניות הטקסט בתוך הכפתור
   };
 
   const familyClass = font_family === 'serif' ? 'font-serif' : font_family === 'mono' ? 'font-mono' : 'font-sans';
@@ -154,6 +163,7 @@ export const ButtonElement = ({ content }: { content: any }) => {
         width: '100%', 
         justifyContent: finalAlign === 'center' ? 'center' : finalAlign === 'right' ? 'flex-end' : 'flex-start' 
       }}
+      dir={isRTL ? 'rtl' : 'ltr'} // הבטחת כיווניות הקונטיינר החיצוני
     >
       <button
         style={style}
@@ -163,7 +173,7 @@ export const ButtonElement = ({ content }: { content: any }) => {
         onClick={handleAction}
       >
         <span className="relative flex items-center justify-center pointer-events-none">
-          {text}
+          {text || (isRTL ? 'לחץ כאן' : 'Click Me')}
           {hover_enabled && hover_type === 'wrapping_lines' && (
             <>
               <div 

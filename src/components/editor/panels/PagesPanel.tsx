@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 import { 
   ChevronRight, Plus, Copy, ChevronUp, Trash2, ChevronDown, Check, PlusCircle,
   GripVertical, Type as TypeIcon, FileText, MousePointer, ImageIcon, Minus,
-  Layout, Layers, Component, Search, ChevronDown as ChevronDownIcon
+  Layout, Layers, Component, Search, ChevronDown as ChevronDownIcon, Info
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
@@ -26,6 +28,9 @@ export const PagesPanel = ({
   setShowAddModal, setSite, markChanged, selectedFlexElementId, setSelectedFlexElementId,
   addNewPage
 }: any) => {
+
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
 
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [customPageName, setCustomPageName] = useState('');
@@ -80,13 +85,13 @@ export const PagesPanel = ({
   };
 
   return (
-    <div className="p-4 space-y-6 text-start">
+    <div className="p-4 space-y-6 text-start" >
       
       {/* --- 1. PAGES SECTION --- */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 px-1">
           <Layout size={12} className="text-brand-main opacity-60" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-brand-charcoal/40">Pages</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-brand-charcoal/40">{t.editor.structure.pagesPanel.pagesTitle}</span>
         </div>
 
         <div className="space-y-2">
@@ -126,7 +131,7 @@ export const PagesPanel = ({
                   {/* SECTIONS HEADER */}
                   <div className="flex items-center gap-2 px-1 opacity-40">
                     <Layers size={10} />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Sections</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest">{t.editor.structure.pagesPanel.sectionsTitle}</span>
                   </div>
 
                   <DragDropContext onDragEnd={(res) => onSectionDragEnd(res, pKey)}>
@@ -169,7 +174,7 @@ export const PagesPanel = ({
                                         {/* ELEMENTS HEADER */}
                                         <div className="flex items-center gap-2 px-1 opacity-30">
                                           <Component size={10} />
-                                          <span className="text-[7px] font-black uppercase tracking-widest">Elements</span>
+                                          <span className="text-[7px] font-black uppercase tracking-widest">{t.editor.structure.pagesPanel.elementsTitle}</span>
                                         </div>
 
                                         {s.content.elements.map((el: any) => {
@@ -215,7 +220,7 @@ export const PagesPanel = ({
   className="w-full py-2 mt-2 border-2 border-dashed border-brand-mint/40 rounded-lg text-[9px] font-black text-brand-charcoal/40 hover:border-brand-main hover:text-brand-main transition-all flex items-center justify-center gap-2 group"
 >
   <Plus size={12} className="group-hover:rotate-90 transition-transform duration-300" /> 
-  <span>ADD SECTION</span>
+  <span>{t.editor.structure.pagesPanel.addSection}</span>
 </button>
                 </div>
               )}
@@ -225,8 +230,8 @@ export const PagesPanel = ({
       </div>
 
       {/* --- 2. SUGGESTED PAGES (Styled Select) --- */}
-      <div className="pt-4 border-t border-brand-mint/30 space-y-3">
-        <span className="text-[9px] font-black text-brand-charcoal/30 uppercase tracking-widest block px-1">Suggested Pages</span>
+      <div className="pt-4 border-t border-brand-mint/30 space-y-3" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+        <span className="text-[9px] font-black text-brand-charcoal/30 uppercase tracking-widest block px-1">{t.editor.structure.pagesPanel.suggestedPages}</span>
         
         <div className="relative">
           <button 
@@ -235,7 +240,7 @@ export const PagesPanel = ({
           >
             <div className="flex items-center gap-2">
               <Search size={14} className="opacity-20" />
-              <span className="text-[10px] font-bold text-brand-charcoal/60 uppercase">Quick Add Page...</span>
+              <span className="text-[10px] font-bold text-brand-charcoal/60 uppercase">{t.editor.structure.pagesPanel.quickAddPlaceholder}</span>
             </div>
             <ChevronDownIcon size={14} className={`opacity-40 transition-transform ${isSelectOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -268,14 +273,14 @@ export const PagesPanel = ({
       </div>
 
       {/* --- 3. CUSTOM PAGES --- */}
-      <div className="pt-4 border-t border-brand-mint/30 space-y-3">
-        <span className="text-[9px] font-black text-brand-charcoal/30 uppercase tracking-widest block px-1">Custom Pages</span>
+      <div className="pt-4 border-t border-brand-mint/30 space-y-3" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+        <span className="text-[9px] font-black text-brand-charcoal/30 uppercase tracking-widest block px-1">{t.editor.structure.pagesPanel.customPagesTitle}</span>
         
         <div className="p-3 bg-brand-pearl/50 rounded-2xl border border-brand-mint/20 space-y-3">
           <div className="flex gap-2">
             <input 
               type="text"
-              placeholder="Enter page name..."
+              placeholder={t.editor.structure.pagesPanel.customPagePlaceholder}
               className="flex-1 bg-white border border-brand-mint/30 rounded-lg px-3 py-2 text-[10px] font-bold outline-none focus:border-brand-main transition-all"
               value={customPageName}
               onChange={(e) => setCustomPageName(e.target.value)}
@@ -288,9 +293,11 @@ export const PagesPanel = ({
               <PlusCircle size={18}/>
             </button>
           </div>
-          <p className="text-[7px] text-brand-charcoal/40 italic px-1 leading-tight">
-            * Creating a custom page will generate a blank canvas for your own structure.
-          </p>
+          <div className="flex items-start gap-2 p-3 bg-brand-pearl rounded-xl border border-brand-lavender/50 text-[10px] text-brand-charcoal/60 leading-tight" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+                            <Info size={14} className="text-brand-indigo shrink-0" />
+                            <p>
+            {t.editor.structure.pagesPanel.customPageNote}
+          </p></div>
         </div>
       </div>
 

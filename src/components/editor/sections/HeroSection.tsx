@@ -7,10 +7,14 @@ import { Paragraph } from '../elements/Paragraph';
 import { ButtonElement } from '../elements/ButtonElement';
 import { ImageElement } from '../elements/ImageElement';
 
-export default function HeroSection({ section, isSelected }: any) {
+export default function HeroSection({ section, isSelected, site }: any) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { content } = section;
   
+  // חילוץ שפת האתר וקביעת כיווניות
+  const siteLanguage = site?.theme_settings?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
+
   // סנכרון עם הסיידבר: שימוש ב-slider_images במקום slides
   const activeSlides = (content.slider_images || []).filter((s: string) => s).slice(0, 5);
 
@@ -29,6 +33,7 @@ export default function HeroSection({ section, isSelected }: any) {
   const containerStyle: React.CSSProperties = {
     height: content.max_height ? `${content.max_height}px` : '100vh',
     minHeight: '400px',
+    direction: isRTL ? 'rtl' : 'ltr' // קביעת כיווניות הקונטיינר
   };
 
   return (
@@ -49,12 +54,14 @@ export default function HeroSection({ section, isSelected }: any) {
         <div className="absolute inset-0 bg-brand-pearl flex items-center justify-center">
              <div className="flex flex-col items-center gap-2 opacity-20">
                 <ImageIcon size={40} />
-                <span className="text-[10px] font-black uppercase tracking-widest">No Slides Found</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">
+                  {isRTL ? 'לא נמצאו שקופיות' : 'No Slides Found'}
+                </span>
              </div>
         </div>
       )}
 
-      {/* 2. Overlay Layer - סנכרון שדות עם הסיידבר */}
+      {/* 2. Overlay Layer */}
       <div 
         className="absolute inset-0 z-10 transition-all duration-500" 
         style={{ 
@@ -63,9 +70,7 @@ export default function HeroSection({ section, isSelected }: any) {
         }} 
       />
 
-{/* 3. Edge Effects (Dynamic Logic) */}
-      
-      {/* Top Fade */}
+      {/* 3. Edge Effects */}
       {content.top_fade?.enabled && (
         <div 
           className="absolute top-0 left-0 w-full z-15 pointer-events-none transition-all duration-500"
@@ -77,7 +82,6 @@ export default function HeroSection({ section, isSelected }: any) {
         />
       )}
 
-      {/* Bottom Fade */}
       {content.bottom_fade?.enabled && (
         <div 
           className="absolute bottom-0 left-0 w-full z-15 pointer-events-none transition-all duration-500"
@@ -90,31 +94,35 @@ export default function HeroSection({ section, isSelected }: any) {
       )}
 
       {/* 4. Content Layer */}
-      <div className="relative z-20 container mx-auto px-6 flex flex-col items-center justify-center py-20">
-        <div className={`w-full flex flex-col gap-2 ${content.content_width || 'max-w-5xl'}`}>
+      <div className={`relative z-20 container mx-auto px-6 flex flex-col items-center justify-center py-20`}>
+        <div 
+          className={`w-full flex flex-col gap-2 ${content.content_width || 'max-w-5xl'} ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}
+        >
           {content.elements && content.elements.length > 0 ? (
             content.elements.map((el: any) => (
               <div key={el.id} className="w-full">
-                {el.type === 'heading' && <Heading content={el} />}
-                {el.type === 'paragraph' && <Paragraph content={el} />}
-                {el.type === 'button' && <ButtonElement content={el} />}
-                {el.type === 'image' && <ImageElement content={el} />}
+                {el.type === 'heading' && <Heading content={el} site={site} />}
+                {el.type === 'paragraph' && <Paragraph content={el} site={site} />}
+                {el.type === 'button' && <ButtonElement content={el} site={site} />}
+                {el.type === 'image' && <ImageElement content={el} site={site} />}
                 {el.type === 'spacer' && (
-  <div 
-    style={{ 
-      height: `${el.spacer_height || el.height || 40}px`,
-      backgroundColor: el.spacer_transparent === false ? (el.spacer_color || '#000000') : 'transparent',
-      opacity: el.spacer_transparent === false ? (el.spacer_opacity ?? 100) / 100 : 1,
-      transition: 'all 0.3s ease-in-out'
-    }} 
-    className="w-full" 
-  />
-)}
+                  <div 
+                    style={{ 
+                      height: `${el.spacer_height || el.height || 40}px`,
+                      backgroundColor: el.spacer_transparent === false ? (el.spacer_color || '#000000') : 'transparent',
+                      opacity: el.spacer_transparent === false ? (el.spacer_opacity ?? 100) / 100 : 1,
+                      transition: 'all 0.3s ease-in-out'
+                    }} 
+                    className="w-full" 
+                  />
+                )}
               </div>
             ))
           ) : (
             <div className="py-20 opacity-20 border-2 border-dashed border-white rounded-3xl w-full flex items-center justify-center">
-               <span className="text-white font-black uppercase text-sm">Empty Hero Canvas</span>
+               <span className="text-white font-black uppercase text-sm">
+                 {isRTL ? 'קנבס היראו ריק' : 'Empty Hero Canvas'}
+               </span>
             </div>
           )}
         </div>
@@ -123,11 +131,18 @@ export default function HeroSection({ section, isSelected }: any) {
       {/* 5. Slider Navigation UI */}
       {activeSlides.length > 1 && (
         <>
-          <button onClick={prevSlide} className="absolute left-6 z-30 p-3 text-white/30 hover:text-white hover:bg-white/10 rounded-full transition-all backdrop-blur-sm">
-            <ChevronLeft size={32}/>
+          {/* כפתורי הניווט מתהפכים ב-RTL (שמאל הופך לימין) */}
+          <button 
+            onClick={isRTL ? nextSlide : prevSlide} 
+            className={`absolute ${isRTL ? 'right-6' : 'left-6'} z-30 p-3 text-white/30 hover:text-white hover:bg-white/10 rounded-full transition-all backdrop-blur-sm`}
+          >
+            {isRTL ? <ChevronRight size={32}/> : <ChevronLeft size={32}/>}
           </button>
-          <button onClick={nextSlide} className="absolute right-6 z-30 p-3 text-white/30 hover:text-white hover:bg-white/10 rounded-full transition-all backdrop-blur-sm">
-            <ChevronRight size={32}/>
+          <button 
+            onClick={isRTL ? prevSlide : nextSlide} 
+            className={`absolute ${isRTL ? 'left-6' : 'right-6'} z-30 p-3 text-white/30 hover:text-white hover:bg-white/10 rounded-full transition-all backdrop-blur-sm`}
+          >
+            {isRTL ? <ChevronLeft size={32}/> : <ChevronRight size={32}/>}
           </button>
           
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex gap-2.5">

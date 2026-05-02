@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { Move, Link as LinkIcon, Link2Off, AlignCenter } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 interface BoxModelGroupProps {
   content: any;
@@ -10,7 +12,9 @@ interface BoxModelGroupProps {
 }
 
 export const BoxModelGroup = ({ content, updateContent, prefix = "" }: BoxModelGroupProps) => {
-  // הפרדה מוחלטת בין מצבי הנעילה
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
+  
   const [isPaddingLocked, setIsPaddingLocked] = useState(true);
   const [isMarginLocked, setIsMarginLocked] = useState(false);
 
@@ -22,7 +26,6 @@ export const BoxModelGroup = ({ content, updateContent, prefix = "" }: BoxModelG
     const isLocked = type === 'padding' ? isPaddingLocked : isMarginLocked;
 
     if (isLocked) {
-      // עדכון כל 4 הכיוונים בבת אחת לסוג הספציפי (padding או margin)
       updateContent({
         [`${prefix}${type}_top`]: value,
         [`${prefix}${type}_bottom`]: value,
@@ -43,7 +46,9 @@ export const BoxModelGroup = ({ content, updateContent, prefix = "" }: BoxModelG
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2 opacity-40">
             {type === 'padding' ? <AlignCenter size={12} /> : <Move size={12} />}
-            <span className="text-[9px] font-bold uppercase">{type} (px)</span>
+            <span className="text-[9px] font-bold uppercase">
+              {type === 'padding' ? t.editor.groups.boxModel.padding : t.editor.groups.boxModel.margin} (px)
+            </span>
           </div>
           <button 
             type="button"
@@ -57,8 +62,8 @@ export const BoxModelGroup = ({ content, updateContent, prefix = "" }: BoxModelG
         <div className="grid grid-cols-2 gap-3">
           {['top', 'bottom', 'left', 'right'].map((side) => (
             <div key={side} className={`space-y-1 ${isLocked && side !== 'top' ? 'opacity-40 pointer-events-none' : ''}`}>
-              <span className="text-[7px] font-black uppercase opacity-40 ml-1">
-                {isLocked ? 'All Sides' : side}
+              <span className={`text-[7px] font-black uppercase opacity-40 ${lang === 'he' ? 'mr-1' : 'ml-1'}`}>
+                {isLocked ? t.editor.groups.boxModel.sides.all : t.editor.groups.boxModel.sides[side as keyof typeof t.editor.groups.boxModel.sides]}
               </span>
               <input 
                 type="number"
@@ -74,10 +79,12 @@ export const BoxModelGroup = ({ content, updateContent, prefix = "" }: BoxModelG
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6">
+    <div className="space-y-6" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+      <div className={`flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6 ${lang === 'he' ? 'text-right' : 'text-left'}`}>
         <Move size={14} className="text-brand-indigo" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">Spacing & Layout</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">
+          {t.editor.groups.boxModel.title}
+        </span>
       </div>
 
       <div className="space-y-4">

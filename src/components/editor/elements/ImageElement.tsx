@@ -2,10 +2,20 @@
 import React, { useState } from 'react';
 import { ImageIcon } from 'lucide-react';
 
-export const ImageElement = ({ content }: { content: any }) => {
+// הגדרת ה-Interface לקבלת content ו-site
+interface ImageElementProps {
+  content: any;
+  site?: any;
+}
+
+export const ImageElement = ({ content, site }: ImageElementProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   if (!content) return null;
+
+  // חילוץ שפת האתר וקביעת כיווניות
+  const siteLanguage = site?.theme_settings?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
 
   const {
     url,
@@ -35,8 +45,9 @@ export const ImageElement = ({ content }: { content: any }) => {
     link_target_blank
   } = content;
 
-  // פתרון היישור (Alignment)
-  const alignmentClass = text_align === 'center' ? 'justify-center' : text_align === 'right' ? 'justify-end' : 'justify-start';
+  // פתרון היישור (Alignment) - אם לא הוגדר מפורשת, מתחשב בשפת האתר
+  const finalAlign = text_align || (isRTL ? 'right' : 'left');
+  const alignmentClass = finalAlign === 'center' ? 'justify-center' : finalAlign === 'right' ? 'justify-end' : 'justify-start';
 
   // חישוב צל (תומך ב-Intensity ובערכים חופשיים)
   const getShadow = () => {
@@ -55,7 +66,7 @@ export const ImageElement = ({ content }: { content: any }) => {
     return 'none';
   };
 
-  // עיצוב הקונטיינר החיצוני (אחראי על צללים, גלואו ומיקום)
+  // עיצוב הקונטיינר החיצוני
   const containerStyle: React.CSSProperties = {
     width: width ? (typeof width === 'number' ? `${width}px` : width) : '200px',
     maxWidth: '100%',
@@ -72,20 +83,20 @@ export const ImageElement = ({ content }: { content: any }) => {
       : 'scale(1)',
     zIndex: isHovered ? 10 : 1,
     position: 'relative',
-    // החלת גלואו או צל רגיל
     boxShadow: (isHovered && hover_enabled && hover_type === 'glow') 
       ? `0 0 20px 2px ${hover_glow_color || '#6366f1'}` 
       : getShadow(),
     borderRadius: `${border_radius ?? 0}px`,
+    direction: isRTL ? 'rtl' : 'ltr'
   };
 
-  // עיצוב המעטפת הפנימית (אחראית על בורדר ו-Overflow לחיתוך תמונות)
+  // עיצוב המעטפת הפנימית
   const innerWrapperStyle: React.CSSProperties = {
     position: 'relative',
     width: '100%',
     height: '100%',
     overflow: 'hidden',
-    borderRadius: 'inherit', // יורש מהקונטיינר
+    borderRadius: 'inherit',
     borderWidth: border_width ? `${border_width}px` : '0px',
     borderColor: (isHovered && hover_enabled && hover_type === 'colors_swap') 
       ? (hover_border_color || border_color || '#000000') 
@@ -117,7 +128,7 @@ export const ImageElement = ({ content }: { content: any }) => {
               className="w-full h-auto block object-cover" 
             />
             
-            {/* תמונת Swap (מופיעה רק ב-Hover במידה והוגדרה) */}
+            {/* תמונת Swap */}
             {hover_enabled && hover_type === 'image_swap' && hover_image_url && (
               <img 
                 src={hover_image_url}
@@ -132,13 +143,13 @@ export const ImageElement = ({ content }: { content: any }) => {
             )}
           </div>
         ) : (
-          /* פלייסהולדר מינימליסטי */
+          /* פלייסהולדר */
           <div className="w-full py-8 bg-white/5 backdrop-blur-[4px] border border-white/10 flex flex-col items-center justify-center gap-2 group">
             <div className="p-2.5 rounded-full bg-white/5 text-white/20 group-hover:text-white/40 transition-colors">
               <ImageIcon size={16} strokeWidth={2} />
             </div>
             <span className="text-[7px] font-black uppercase tracking-[0.25em] text-white/30">
-              Empty Media
+              {isRTL ? 'מדיה ריקה' : 'Empty Media'}
             </span>
           </div>
         )}

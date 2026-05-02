@@ -9,6 +9,8 @@ import { UploadPreviewOverlay } from './UploadPreviewOverlay';
 import { AssetDetailView } from './AssetDetailView';
 import { CreateFolderOverlay } from './CreateFolderOverlay';
 import Toast, { ToastType } from '@/components/ui/Toast';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 export const AssetManagerModal = ({ 
   isOpen, 
@@ -18,6 +20,8 @@ export const AssetManagerModal = ({
   mode = 'manage', 
   allSections = [] 
 }: any) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const [mounted, setMounted] = useState(false);
   const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +51,7 @@ export const AssetManagerModal = ({
       const data = await fetchSiteAssets(siteId, currentPath);
       setAssets(data);
     } catch (error) {
-      showToast("Failed to load assets", "error");
+      showToast(t.editor.modals.assetManager.errors.loadFailed, "error");
     } finally {
       setLoading(false);
     }
@@ -74,14 +78,7 @@ export const AssetManagerModal = ({
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[60px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300">
-      
-      <button 
-        onClick={onClose}
-        className="absolute top-6 right-6 z-[1100] p-3 bg-white text-brand-dark rounded-full shadow-2xl hover:bg-red-50 hover:text-red-500 transition-all active:scale-95"
-      >
-        <X size={24} />
-      </button>
+    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[60px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300" dir={lang === 'he' ? 'rtl' : 'ltr'}>
 
       <div className="bg-[#FDFDFD] w-full max-w-7xl h-full max-h-[calc(100vh-100px)] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/40 relative animate-in zoom-in-95 duration-300">
         
@@ -90,11 +87,13 @@ export const AssetManagerModal = ({
           <div>
             <h2 className="text-2xl font-black text-brand-dark tracking-tighter flex items-center gap-2 text-start">
               <ImageIcon className="text-brand-main" size={24} />
-              Asset Manager
+              {t.editor.modals.assetManager.title}
             </h2>
             <div className="flex items-center gap-2 mt-0.5">
                <span className="text-[10px] font-black bg-brand-main/10 text-brand-main px-2 py-0.5 rounded uppercase tracking-wider">
-                 {mode === 'select' ? 'Selection' : 'Admin'}
+                 {mode === 'select' 
+                   ? t.editor.modals.assetManager.modes.select 
+                   : t.editor.modals.assetManager.modes.manage}
                </span>
             </div>
           </div>
@@ -113,13 +112,13 @@ export const AssetManagerModal = ({
                     onClick={() => setIsCreatingFolder(true)}
                     className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-brand-charcoal/60 hover:text-brand-dark hover:bg-white transition-all shadow-sm border border-transparent"
                   >
-                    <FolderPlus size={14} /> New Folder
+                    <FolderPlus size={14} /> {t.editor.modals.assetManager.actions.newFolder}
                   </button>
                   <button 
                     onClick={() => fileInputRef.current?.click()}
                     className="px-6 py-2.5 bg-brand-main text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-brand-main/20 hover:scale-[1.02] active:scale-95 transition-all"
                   >
-                    <Upload size={14} /> Upload Assets
+                    <Upload size={14} /> {t.editor.modals.assetManager.actions.upload}
                   </button>
                </div>
              )}

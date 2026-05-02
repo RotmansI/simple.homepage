@@ -2,12 +2,16 @@
 
 import React, { useState, useMemo } from 'react';
 import { Loader2, Check, Trash2, X, ImageIcon, Tag, LayoutGrid, MapPin, ExternalLink, Columns, Grid3X3, Search, HardDrive } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 export const AssetsPanel = ({ 
   site, assets, uploading, assetUploadRef, handleAssetSelect, 
   deleteAsset, setSite, markChanged,
   openAssetManager 
 }: any) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const [selectedAssetForEdit, setSelectedAssetForEdit] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [cols, setCols] = useState<2 | 3>(3); // ברירת מחדל 3 עמודות
@@ -40,7 +44,7 @@ export const AssetsPanel = ({
   }, [assets, searchQuery]);
 
   return (
-    <div className="p-4 space-y-5 text-start animate-in fade-in duration-300 h-full flex flex-col overflow-hidden">
+    <div className="p-4 space-y-5 text-start animate-in fade-in duration-300 h-full flex flex-col overflow-hidden" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       
       {/* Action Area */}
       <div className="space-y-3 shrink-0">
@@ -48,7 +52,7 @@ export const AssetsPanel = ({
           onClick={() => openAssetManager && openAssetManager()} 
           className="w-full py-4 bg-brand-main text-white rounded-2xl font-black text-[11px] shadow-lg shadow-brand-main/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em]"
         >
-          <HardDrive size={16} /> Open Asset Manager
+          <HardDrive size={16} /> {t.editor.structure.assetsPanel.openManager}
         </button>
 
         {/* Search Field */}
@@ -57,7 +61,7 @@ export const AssetsPanel = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-brand-grey/50 p-4 pl-12 rounded-2xl font-bold text-[11px] text-brand-dark outline-none focus:ring-2 ring-brand-main transition-all border border-transparent"
-            placeholder="SEARCH ASSETS..."
+            placeholder={t.editor.structure.assetsPanel.searchPlaceholder}
           />
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-charcoal/30 group-focus-within:text-brand-main transition-colors" />
           {searchQuery && (
@@ -71,9 +75,9 @@ export const AssetsPanel = ({
       {/* Grid Controls */}
       <div className="flex justify-between items-end px-1 shrink-0">
         <div className="text-start">
-          <h3 className="text-brand-dark font-black text-[11px] tracking-tighter uppercase leading-none">Select Asset</h3>
+          <h3 className="text-brand-dark font-black text-[11px] tracking-tighter uppercase leading-none">{t.editor.structure.assetsPanel.selectTitle}</h3>
           <p className="text-[8px] font-bold text-brand-charcoal/30 uppercase tracking-widest mt-1">
-            {filteredAssets.length} Items Available
+            {filteredAssets.length} {t.editor.structure.assetsPanel.itemsAvailable}
           </p>
         </div>
 
@@ -95,7 +99,7 @@ export const AssetsPanel = ({
 
       {/* Main Selection Grid */}
       <div className="flex-1 overflow-y-auto custom-scrollbar -mx-2 px-2">
-        <div className={`grid ${cols === 2 ? 'grid-cols-2' : 'grid-cols-3'} gap-3 pb-32`}>
+        <div className={`grid ${cols === 2 ? 'grid-cols-2' : 'grid-cols-3'} gap-3 pb-32`} dir='ltr'>
           {filteredAssets.map((asset: any, i: number) => {
             // חילוץ הנתיב מתוך ה-Path המלא (בלי שם הקובץ)
             const displayPath = asset.path ? asset.path.split('/').slice(0, -1).join('/') || 'Root' : 'Root';
@@ -147,7 +151,7 @@ export const AssetsPanel = ({
           {filteredAssets.length === 0 && (
             <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-30 text-center">
               <ImageIcon size={40} className="mb-4 text-brand-charcoal/20" />
-              <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">No matching assets<br/>found in library</p>
+              <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">{t.editor.structure.assetsPanel.noAssets}</p>
             </div>
           )}
         </div>
@@ -158,7 +162,7 @@ export const AssetsPanel = ({
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-brand-dark/40 backdrop-blur-md p-6">
           <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-brand-lavender/20 animate-in zoom-in-95 duration-200 text-start">
             <div className="p-6 border-b border-brand-lavender/20 flex justify-between items-center bg-brand-grey/30">
-              <h3 className="font-black uppercase tracking-tighter text-xl flex items-center gap-2"><ImageIcon size={20}/> Asset Details</h3>
+              <h3 className="font-black uppercase tracking-tighter text-xl flex items-center gap-2"><ImageIcon size={20}/> {t.editor.structure.assetsPanel.detailsModal.title}</h3>
               <button onClick={() => setSelectedAssetForEdit(null)} className="p-2 hover:bg-brand-lavender/50 rounded-full transition-all text-brand-charcoal/40"><X/></button>
             </div>
             <div className="p-8 flex flex-col items-center gap-6">
@@ -167,7 +171,7 @@ export const AssetsPanel = ({
               </div>
               <div className="w-full space-y-4">
                 <div className="space-y-3">
-                  <span className="text-[10px] font-black uppercase text-brand-charcoal/40 tracking-widest flex items-center gap-2"><Tag size={12} className="text-brand-main"/> Category Mapping</span>
+                  <span className="text-[10px] font-black uppercase text-brand-charcoal/40 tracking-widest flex items-center gap-2"><Tag size={12} className="text-brand-main"/> {t.editor.structure.assetsPanel.detailsModal.categoryLabel}</span>
                   <div className="flex flex-wrap gap-2">
                     {['all', ...userCategories].map((cat: string) => {
                       const currentCat = site?.draft_data?.asset_mappings?.[selectedAssetForEdit.name] || '';
@@ -187,7 +191,7 @@ export const AssetsPanel = ({
               </div>
             </div>
             <div className="p-6 bg-brand-grey/30 border-t border-brand-lavender/20 flex gap-3">
-              <button onClick={() => { handleAssetSelect(selectedAssetForEdit.url); setSelectedAssetForEdit(null); }} className="flex-1 py-4 bg-brand-main text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 uppercase tracking-widest"><Check size={16}/> Select Image</button>
+              <button onClick={() => { handleAssetSelect(selectedAssetForEdit.url); setSelectedAssetForEdit(null); }} className="flex-1 py-4 bg-brand-main text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 uppercase tracking-widest"><Check size={16}/> {t.editor.structure.assetsPanel.detailsModal.selectBtn}</button>
               <button onClick={() => { deleteAsset(selectedAssetForEdit.name); setSelectedAssetForEdit(null); }} className="px-6 py-4 bg-red-50 text-red-500 rounded-2xl font-black text-xs hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest"><Trash2 size={16}/></button>
             </div>
           </div>

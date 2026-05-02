@@ -12,8 +12,9 @@ import {
   Copy,
   Image as ImageIcon
 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
-// אייקון H מותאם אישית ל-Heading
 const HeadingIcon = ({ size = 18 }: { size?: number }) => (
   <svg 
     width={size} 
@@ -46,16 +47,18 @@ export const ContentManagerGroup = ({
   onRemoveElement,
   allowedElements
 }: ContentManagerGroupProps) => {
-
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const elements = content.elements || [];
 
+  // שימוש בתוויות מתורגמות עבור אפשרויות ההוספה
   const elementTypes = [
-    { id: 'heading', label: 'Heading', icon: HeadingIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 'paragraph', label: 'Text', icon: Type, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'button', label: 'Button', icon: MousePointer2, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { id: 'image', label: 'Image', icon: Box, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'spacer', label: 'Spacer', icon: Layout, color: 'text-slate-400', bg: 'bg-slate-50' },
+    { id: 'heading', label: t.editor.sidebar.sections.elementTypes.heading, icon: HeadingIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { id: 'paragraph', label: t.editor.sidebar.sections.elementTypes.paragraph, icon: Type, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'button', label: t.editor.sidebar.sections.elementTypes.button, icon: MousePointer2, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { id: 'image', label: t.editor.sidebar.sections.elementTypes.image, icon: Box, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { id: 'spacer', label: t.editor.sidebar.sections.elementTypes.spacer, icon: Layout, color: 'text-slate-400', bg: 'bg-slate-50' },
   ];
 
   const filteredAddOptions = allowedElements 
@@ -74,7 +77,6 @@ export const ContentManagerGroup = ({
     }
   };
 
-  // --- לוגיקת גרירה ושינוי מיקום ---
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
 
   const handleDragOver = (e: React.DragEvent, targetIdx: number) => {
@@ -83,32 +85,26 @@ export const ContentManagerGroup = ({
 
     const newElements = [...elements];
     const draggedItem = newElements[draggedIdx];
-    
-    // הסרה והוספה מחדש במיקום החדש
     newElements.splice(draggedIdx, 1);
     newElements.splice(targetIdx, 0, draggedItem);
-    
     setDraggedIdx(targetIdx);
     updateContent({ elements: newElements });
   };
 
-  // --- פונקציית שכפול אלמנט ---
   const handleDuplicate = (el: any) => {
-    const newEl = { 
-      ...el, 
-      id: `${el.type}-${crypto.randomUUID()}` 
-    };
+    const newEl = { ...el, id: `${el.type}-${crypto.randomUUID()}` };
     updateContent({ elements: [...elements, newEl] });
   };
 
   return (
-    <div className="space-y-8">
-      
+    <div className="space-y-8" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       {/* 1. הוספת אלמנט חדש */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6">
+        <div className={`flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6 ${lang === 'he' ? 'text-right' : 'text-left'}`}>
           <Plus size={14} className="text-brand-indigo" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">Add New Element</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">
+            {t.editor.groups.contentManager.addNew}
+          </span>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-brand-lavender shadow-sm">
@@ -131,16 +127,19 @@ export const ContentManagerGroup = ({
         </div>
       </div>
 
-      {/* 2. ניהול מבנה האלמנטים הקיימים */}
+      {/* 2. ניהול מבנה */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6">
+        <div className={`flex items-center gap-2 px-1 border-t border-brand-lavender/30 pt-6 ${lang === 'he' ? 'text-right' : 'text-left'}`}>
           <GripVertical size={14} className="text-brand-indigo" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">Elements Structure</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-brand-midnight">
+            {t.editor.groups.contentManager.structure}
+          </span>
         </div>
 
         <div className="bg-white p-2 rounded-2xl border border-brand-lavender shadow-sm space-y-1">
-{elements.map((el: any, idx: number) => {
+          {elements.map((el: any, idx: number) => {
             const isGallery = el.type === 'gallery-content';
+            const translatedType = t.editor.sidebar.sections.elementTypes[el.type as keyof typeof t.editor.sidebar.sections.elementTypes] || el.type;
 
             return (
               <div 
@@ -162,32 +161,31 @@ export const ContentManagerGroup = ({
                 </div>
 
                 <div 
-                  className="flex-1 min-w-0 cursor-pointer" 
+                  className={`flex-1 min-w-0 cursor-pointer ${lang === 'he' ? 'text-right' : 'text-left'}`} 
                   onClick={() => !isGallery && onEditElement?.(el.id)}
                 >
-                  <p className="text-[11px] font-bold truncate text-brand-midnight lowercase">
-                    {isGallery ? 'Gallery Layout' : (el.text || el.type)}
+                  <p className="text-[11px] font-bold truncate text-brand-midnight">
+                    {isGallery ? t.editor.groups.contentManager.galleryFixed : (el.text || translatedType)}
                   </p>
                   <p className="text-[8px] opacity-40 uppercase font-black tracking-tighter">
-                    {isGallery ? 'Core Element' : el.type}
+                    {isGallery ? t.editor.groups.contentManager.galleryCore : translatedType}
                   </p>
                 </div>
 
-                {/* כפתורי פעולה: שכפול ומחיקה */}
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                   {!isGallery && (
                     <>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDuplicate(el); }}
                         className="p-2 text-brand-midnight/40 hover:text-brand-indigo hover:bg-brand-indigo/10 rounded-lg transition-all"
-                        title="Duplicate"
+                        title={t.editor.groups.contentManager.actions.duplicate}
                       >
                         <Copy size={13} />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); onRemoveElement?.(el.id); }}
                         className="p-2 text-brand-coral hover:bg-brand-coral/10 rounded-lg transition-all"
-                        title="Remove"
+                        title={t.editor.groups.contentManager.actions.remove}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -196,7 +194,9 @@ export const ContentManagerGroup = ({
                   
                   {isGallery && (
                     <div className="px-2 py-1 bg-brand-indigo/5 rounded-md">
-                      <span className="text-[7px] font-black text-brand-indigo uppercase opacity-40">Fixed</span>
+                      <span className="text-[7px] font-black text-brand-indigo uppercase opacity-40">
+                        {t.editor.groups.contentManager.fixed}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -206,7 +206,9 @@ export const ContentManagerGroup = ({
           
           {elements.length === 0 && (
             <div className="py-10 text-center border-2 border-dashed border-brand-lavender/50 m-2 rounded-xl bg-brand-pearl/20">
-              <p className="text-[10px] font-bold uppercase opacity-30 tracking-widest">Canvas is empty</p>
+              <p className="text-[10px] font-bold uppercase opacity-30 tracking-widest">
+                {t.editor.groups.contentManager.empty}
+              </p>
             </div>
           )}
         </div>

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 import { Layers, Navigation, Palette, LayoutGrid, ChevronRight, Wrench, HardDrive, ChevronLeft } from 'lucide-react';
 import { SidebarTab } from './EditorUI';
 
@@ -16,6 +18,9 @@ import { AssetManagerModal } from './settings/controls/AssetManager/AssetManager
 import MenuManagementModal from './settings/controls/MenuManagementModal';
 
 export default function StructureSidebar(props: any) {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
+  
   const { 
     isCollapsed,
     toggleSidebar,
@@ -59,19 +64,19 @@ return (
             
             {/* Standard Tabs */}
             <div className={`grid grid-cols-4 p-1 transition-all duration-300 ease-in-out ${activePanel === 'assets' ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
-              <SidebarTab active={activePanel === 'pages'} onClick={() => setActivePanel('pages')} icon={<Layers size={18} />} label="Pages" />
-              <SidebarTab active={activePanel === 'navbar'} onClick={() => setActivePanel('navbar')} icon={<Navigation size={18} />} label="Nav" />
-              <SidebarTab active={activePanel === 'settings'} onClick={() => setActivePanel('settings')} icon={<Palette size={18} />} label="Settings" />
-              <SidebarTab active={activePanel === 'tools'} onClick={() => setActivePanel('tools')} icon={<Wrench size={18} />} label="Tools" />
+              <SidebarTab active={activePanel === 'pages'} onClick={() => setActivePanel('pages')} icon={<Layers size={18} />} label={t.editor.structure.tabs.pages} />
+              <SidebarTab active={activePanel === 'navbar'} onClick={() => setActivePanel('navbar')} icon={<Navigation size={18} />} label={t.editor.structure.tabs.nav} />
+              <SidebarTab active={activePanel === 'settings'} onClick={() => setActivePanel('settings')} icon={<Palette size={18} />} label={t.editor.structure.tabs.settings} />
+              <SidebarTab active={activePanel === 'tools'} onClick={() => setActivePanel('tools')} icon={<Wrench size={18} />} label={t.editor.structure.tabs.tools} />
             </div>
 
             {/* Assets Selection Tool Header */}
-            <div 
+            <div dir={lang === 'he' ? 'rtl' : 'ltr'}
               className={`absolute inset-0 bg-brand-main flex items-center justify-between px-4 transition-all duration-300 ease-in-out ${activePanel === 'assets' ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}
             >
               <div className="flex items-center gap-2 text-white">
                 <LayoutGrid size={16} className="animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Assets Selection Tool</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{t.editor.structure.assetsTool.title}</span>
               </div>
               
               <button 

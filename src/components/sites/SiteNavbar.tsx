@@ -6,6 +6,7 @@ import {
   Menu, X, Clock, MapPin, Phone, 
   ShoppingBag, Calendar, Copy, Utensils, PhoneCall
 } from 'lucide-react';
+import { publicTranslations } from '@/lib/translations/public';
 
 // שימוש ב-Font Awesome ללוגואים של אפליקציות ורשתות חברתיות
 import { 
@@ -17,8 +18,12 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
   const [isHoursLocked, setIsHoursLocked] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  // זיהוי שפת האתר מתוך הגדרות התמה (ברירת מחדל אנגלית)
+  const siteLanguage = theme?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
+  const t = (publicTranslations as any)[siteLanguage]?.navbar || publicTranslations.en.navbar;
+
   const navSettings = settings?.navbar || {};
-  const isEn = navSettings.direction === 'ltr';
   
   // צבעים מהתמה ומהגדרות הנאב
   const primaryColor = theme?.primary_color || '#0B4440';
@@ -51,22 +56,26 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
   const copyToClipboard = (text: string, label: string) => {
     if (!text) return;
     navigator.clipboard.writeText(text);
-    alert(`${label} ${isEn ? 'copied!' : 'הועתק!'}`);
+    alert(`${label} ${t.copySuccess}`);
   };
 
   const getPageTitle = (pKey: string, originalTitle: string) => {
-    if (!isEn) return originalTitle;
-    const translations: any = {
-      'home': 'Home', 'menu': 'Menu', 'about': 'About', 
-      'gallery': 'Gallery', 'contact': 'Contact', 'order': 'Order'
+    const key = pKey.toLowerCase();
+    const translationMap: any = {
+      'home': t.home,
+      'menu': t.menu,
+      'about': t.about,
+      'gallery': t.gallery,
+      'contact': t.contactPage,
+      'order': t.order
     };
-    return translations[pKey.toLowerCase()] || originalTitle;
+    return translationMap[key] || originalTitle;
   };
 
   const actionButtonClass = `flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black transition-all hover:scale-105 active:scale-95 shadow-lg`;
 
   return (
-    <header className="sticky top-0 z-[100] w-full flex flex-col shadow-xl" dir={isEn ? 'ltr' : 'rtl'}>
+    <header className="sticky top-0 z-[100] w-full flex flex-col shadow-xl" dir={isRTL ? 'rtl' : 'ltr'}>
       
       {/* שכבה עליונה */}
       <div className="h-20 px-6 md:px-20 flex items-center justify-between border-b border-white/10" style={{ backgroundColor: bgColor, color: linkColor }}>
@@ -93,27 +102,27 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
         <div className="hidden lg:flex items-center justify-center gap-4 flex-1">
           {navSettings.booking_url && (
             <a href={navSettings.booking_url} target="_blank" className={actionButtonClass} style={{ backgroundColor: primaryColor, color: '#fff' }}>
-               <Utensils size={14}/> {isEn ? 'Book a Table' : 'הזמנת שולחן'}
+               <Utensils size={14}/> {t.bookTable}
             </a>
           )}
           {navSettings.delivery_url && (
             <a href={navSettings.delivery_url} target="_blank" className={actionButtonClass} style={{ backgroundColor: primaryColor, color: '#fff' }}>
-               <ShoppingBag size={14}/> {isEn ? 'Delivery / TA' : 'איסוף / משלוח'}
+               <ShoppingBag size={14}/> {t.delivery}
             </a>
           )}
         </div>
 
-        {/* אייקונים בצד ימין */}
+        {/* אייקונים בצד */}
         <div className="hidden md:flex items-center justify-end gap-1 lg:w-1/4">
           <div className="relative nav-popup-container">
             <button onClick={() => setActivePopup(activePopup === 'nav' ? null : 'nav')} className="p-2.5 rounded-full transition-all" style={{ color: linkColor }}>
               <MapPin size={22} />
             </button>
             {activePopup === 'nav' && (
-              <div className="absolute top-14 left-1/2 -translate-x-1/2 bg-white shadow-2xl p-6 rounded-3xl text-brand-dark w-80 z-[120] border border-brand-mint/20 animate-in fade-in zoom-in-95">
-                <div className="font-black mb-3 text-sm text-gray-800">{isEn ? 'Our Location' : 'המיקום שלנו'}</div>
-                <button onClick={() => copyToClipboard(navSettings.address, isEn ? 'Address' : 'כתובת')} className="w-full mb-4 p-4 bg-gray-50 rounded-2xl flex items-center justify-between group hover:bg-brand-mint/5 transition-all text-start border border-gray-100">
-                  <span className="text-[11px] font-bold leading-relaxed break-words flex-1 ml-2 text-gray-600">{navSettings.address}</span>
+              <div className="absolute top-14 left-1/2 -translate-x-1/2 bg-white shadow-2xl p-6 rounded-3xl text-brand-dark w-80 z-[120] border border-brand-mint/20 animate-in fade-in zoom-in-95" dir={isRTL ? 'rtl' : 'ltr'}>
+                <div className="font-black mb-3 text-sm text-gray-800">{t.location}</div>
+                <button onClick={() => copyToClipboard(navSettings.address, t.addressLabel)} className="w-full mb-4 p-4 bg-gray-50 rounded-2xl flex items-center justify-between group hover:bg-brand-mint/5 transition-all text-start border border-gray-100">
+                  <span className={`text-[11px] font-bold leading-relaxed break-words flex-1 text-gray-600 ${isRTL ? 'ml-2' : 'mr-2'}`}>{navSettings.address}</span>
                   <Copy size={16} className="text-gray-300 group-hover:text-brand-main shrink-0" />
                 </button>
                 <div className="grid grid-cols-2 gap-3">
@@ -137,13 +146,15 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
               <Clock size={22} />
             </button>
             {activePopup === 'hours' && (
-              <div className="absolute top-14 left-1/2 -translate-x-1/2 bg-white shadow-2xl p-6 rounded-3xl text-brand-dark w-64 z-[120] border border-brand-mint/20 animate-in fade-in zoom-in-95">
-                <div className="font-black mb-4 flex items-center gap-2 border-b border-gray-100 pb-2 text-gray-800"><Clock size={16} className="text-brand-main" /> {isEn ? 'Opening Hours' : 'שעות פעילות'}</div>
+              <div className="absolute top-14 left-1/2 -translate-x-1/2 bg-white shadow-2xl p-6 rounded-3xl text-brand-dark w-64 z-[120] border border-brand-mint/20 animate-in fade-in zoom-in-95" dir={isRTL ? 'rtl' : 'ltr'}>
+                <div className="font-black mb-4 flex items-center gap-2 border-b border-gray-100 pb-2 text-gray-800">
+                  <Clock size={16} className="text-brand-main" /> {t.hours}
+                </div>
                 <div className="space-y-2.5">
                   {dayOrder.map((day) => (
                     <div key={day} className="flex justify-between items-center text-xs text-gray-700">
-                      <span className="font-bold opacity-60">{isEn ? day : dayMapHe[day]}</span>
-                      <span className="font-mono font-bold">{navSettings.hours?.[day] || (isEn ? 'Closed' : 'סגור')}</span>
+                      <span className="font-bold opacity-60">{isRTL ? dayMapHe[day] : day}</span>
+                      <span className="font-mono font-bold" dir="ltr">{navSettings.hours?.[day] || t.closed}</span>
                     </div>
                   ))}
                 </div>
@@ -156,14 +167,14 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
               <Phone size={22} />
             </button>
             {activePopup === 'phone' && (
-              <div className="absolute top-14 left-1/2 -translate-x-1/2 bg-white shadow-2xl p-6 rounded-3xl text-brand-dark w-64 z-[120] border border-brand-mint/20 animate-in fade-in zoom-in-95">
-                <div className="font-black mb-4 text-center text-gray-800">{isEn ? 'Contact Us' : 'יצירת קשר'}</div>
-                <button onClick={() => copyToClipboard(navSettings.phone, isEn ? 'Phone' : 'מספר טלפון')} className="w-full mb-4 p-3 bg-gray-50 rounded-xl flex items-center justify-center gap-3 font-mono font-bold text-sm text-gray-700 border border-gray-100">
+              <div className="absolute top-14 left-1/2 -translate-x-1/2 bg-white shadow-2xl p-6 rounded-3xl text-brand-dark w-64 z-[120] border border-brand-mint/20 animate-in fade-in zoom-in-95" dir={isRTL ? 'rtl' : 'ltr'}>
+                <div className="font-black mb-4 text-center text-gray-800">{t.contact}</div>
+                <button onClick={() => copyToClipboard(navSettings.phone, t.phoneLabel)} className="w-full mb-4 p-3 bg-gray-50 rounded-xl flex items-center justify-center gap-3 font-mono font-bold text-sm text-gray-700 border border-gray-100" dir="ltr">
                   {navSettings.phone} <Copy size={14} className="text-gray-300" />
                 </button>
                 <div className="flex flex-col gap-2">
                   <a href={`tel:${navSettings.phone}`} className="flex items-center justify-center gap-2 p-3 text-white rounded-xl font-black text-xs transition-transform active:scale-95 shadow-sm" style={{ backgroundColor: primaryColor }}>
-                    <PhoneCall size={14} /> {isEn ? 'Call Now' : 'חיוג למסעדה'}
+                    <PhoneCall size={14} /> {t.callNow}
                   </a>
                   {navSettings.whatsapp && (
                     <a href={`https://wa.me/${(navSettings.whatsapp_phone || navSettings.phone)?.replace(/\D/g,'')}`} target="_blank" className="flex items-center justify-center gap-2 p-3 bg-[#25D366] text-white rounded-xl font-black text-xs transition-transform active:scale-95 shadow-sm">
@@ -188,7 +199,7 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
         </button>
       </div>
 
-      {/* שכבה תחתונה: בר תפריט עם אפקט Hover Slide */}
+      {/* שכבה תחתונה: בר תפריט */}
       <div className="backdrop-blur-md border-b border-white/5 overflow-x-auto no-scrollbar scroll-smooth h-12 flex items-center" style={{ backgroundColor: bgColor }}>
         <div className="container mx-auto px-6 md:px-20 flex items-center justify-center gap-8 h-full">
           {Object.keys(pages).map((pKey) => {
@@ -211,7 +222,6 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
                 <span 
                   className="transition-colors duration-300"
                   style={{ 
-                    // שימוש ב-inline hover דרך style ידני אם Tailwind לא תופס
                     color: isActive ? linkActiveColor : undefined 
                   }}
                   onMouseEnter={(e) => { if(!isActive) e.currentTarget.style.color = linkHoverColor }}
@@ -225,11 +235,9 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
                   className={`absolute bottom-0 left-0 w-full h-[3px] transition-transform duration-300 origin-center ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}
                   style={{ 
                     backgroundColor: isActive ? linkActiveColor : linkHoverColor,
-                    // הוספת לוגיקה שה-Div יגיב ל-Hover של ה-Link האב
                   }}
                 />
                 
-                {/* תיקון קו תחתון ב-Hover באמצעות CSS Variable */}
                 <style dangerouslySetInnerHTML={{ __html: `
                   a[href*="${pKey}"]:hover div { transform: scaleX(1); }
                   a[href*="${pKey}"]:hover span { color: ${linkHoverColor} !important; }
@@ -242,7 +250,7 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="fixed inset-0 top-0 bg-white z-[200] p-8 flex flex-col gap-6 animate-in slide-in-from-top-5 md:hidden text-gray-900" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="fixed inset-0 top-0 bg-white z-[200] p-8 flex flex-col gap-6 animate-in slide-in-from-top-5 md:hidden text-gray-900" dir={isRTL ? 'rtl' : 'ltr'}>
           <div className="flex justify-between items-center mb-8">
              <div className="text-xl" style={{ fontFamily: navSettings.text_font || 'inherit', fontWeight: navSettings.text_bold ? '900' : '400', fontStyle: navSettings.text_italic ? 'italic' : 'normal', color: navSettings.text_color || '#1A1A1A' }}>{navSettings.brand_text || orgName}</div>
              <button onClick={() => setIsOpen(false)}><X size={32}/></button>

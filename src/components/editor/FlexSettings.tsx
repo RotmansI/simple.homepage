@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ChevronLeft, Maximize2, Palette, Layers, GripVertical } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Palette, Layers, GripVertical } from 'lucide-react';
 import { ElementEditor } from './ElementEditor';
 
 // ייבוא הקבוצות המעודכנות
@@ -11,6 +11,8 @@ import { SectionBackgroundGroup } from './settings/groups/SectionBackgroundGroup
 import { EdgeEffectsGroup } from './settings/groups/EdgeEffectsGroup';
 import { ContentManagerGroup } from './settings/groups/ContentManagerGroup'; 
 import { SettingsCollapse } from './settings/groups/SettingsCollapse';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 interface FlexSettingsProps {
   site: any;
@@ -34,6 +36,9 @@ export const FlexSettings = ({
   setSelectedFlexElementId, onBackToPage, activePageKey, pages
 }: FlexSettingsProps) => {
 
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
+
   const content = selectedSection.content;
   const currentElement = content.elements?.find((e: any) => e.id === selectedFlexElementId);
 
@@ -55,20 +60,24 @@ export const FlexSettings = ({
     );
   }
 
-  const pageName = pages[activePageKey]?.name || "Page";
+  const pageName = pages[activePageKey]?.name || t.editor.sidebar.sections.page;
   const allSectionsContent = site?.draft_data?.content || site?.content;
 
   return (
-    <div className="space-y-2 text-start animate-in fade-in duration-300 pb-20">
+    <div className="space-y-2 text-start animate-in fade-in duration-300 pb-20" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       
       {/* כפתור חזרה */}
       <button 
         onClick={onBackToPage}
         className="flex items-center gap-2 px-1 py-1 text-brand-indigo hover:text-brand-indigo/70 transition-all group mb-4"
       >
-        <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+        {lang === 'he' ? (
+          <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+        ) : (
+          <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+        )}
         <span className="text-[10px] font-black uppercase tracking-tight">
-          Back to <span className="underline decoration-brand-indigo/30 underline-offset-2">{pageName}</span>
+          {t.editor.sidebar.sections.backToPage} <span className="underline decoration-brand-indigo/30 underline-offset-2">{pageName}</span>
         </span>
       </button>
 
@@ -82,7 +91,7 @@ export const FlexSettings = ({
 
       <div className="flex flex-col">
         {/* 2. גובה ומימדים */}
-        <SettingsCollapse label="Dimensions" icon={<Maximize2 size={14}/>}>
+        <SettingsCollapse label={t.editor.sidebar.sections.groups.dimensions} icon={<Maximize2 size={14}/>}>
           <DimensionsGroup 
             content={content} 
             updateContent={updateContent} 
@@ -91,7 +100,7 @@ export const FlexSettings = ({
         </SettingsCollapse>
 
         {/* 3. רקע (צבע/תמונה/שקיפות) */}
-        <SettingsCollapse label="Background & Styles" icon={<Palette size={14}/>} defaultOpen={true}>
+        <SettingsCollapse label={t.editor.sidebar.sections.groups.background} icon={<Palette size={14}/>} defaultOpen={true}>
           <SectionBackgroundGroup 
             content={content}
             updateContent={updateContent}
@@ -102,7 +111,7 @@ export const FlexSettings = ({
         </SettingsCollapse>
 
         {/* 4. אפקטי קצוות */}
-        <SettingsCollapse label="Edge Effects" icon={<Layers size={14}/>}>
+        <SettingsCollapse label={t.editor.sidebar.sections.groups.effects} icon={<Layers size={14}/>}>
           <EdgeEffectsGroup 
             content={content}
             updateContent={updateContent}
@@ -112,7 +121,7 @@ export const FlexSettings = ({
         </SettingsCollapse>
 
         {/* 5. ניהול והוספת אלמנטים */}
-        <SettingsCollapse label="Section Elements" icon={<GripVertical size={14}/>} defaultOpen={true}>
+        <SettingsCollapse label={t.editor.sidebar.sections.groups.elements} icon={<GripVertical size={14}/>} defaultOpen={true}>
           <ContentManagerGroup 
             content={content}
             updateContent={updateContent}

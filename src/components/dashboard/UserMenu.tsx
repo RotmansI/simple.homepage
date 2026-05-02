@@ -2,22 +2,24 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Language, translations } from '@/lib/translations';
+import { Language, translations } from '@/lib/translations/index';
 import { 
   User, Settings, Sparkles, MessageCircle, 
   ShieldCheck, Users, LogOut, ChevronDown 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface UserMenuProps {
   profile: any;
-  lang: Language;
 }
 
-export default function UserMenu({ profile, lang }: UserMenuProps) {
+export default function UserMenu({ profile }: UserMenuProps) {
+  const { lang } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const t = translations[lang].userMenu;
+  
+  const t = translations[lang as Language].userMenu;
   const isRtl = lang === 'he';
 
   // סגירת התפריט בלחיצה מחוץ לרכיב
@@ -40,7 +42,7 @@ export default function UserMenu({ profile, lang }: UserMenuProps) {
 
   return (
     <div className="relative inline-block" ref={menuRef}>
-      {/* Avatar Trigger - הוספת z-index גבוה כדי שלא ייחבא תחת אלמנטים אחרים */}
+      {/* Avatar Trigger */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-2 p-1.5 rounded-full transition-all cursor-pointer border-2 shadow-sm relative z-50
@@ -52,7 +54,6 @@ export default function UserMenu({ profile, lang }: UserMenuProps) {
             className="w-9 h-9 rounded-full object-cover" 
             alt="User" 
           />
-          {/* Online Indicator */}
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-electric border-2 border-white rounded-full"></div>
         </div>
         <ChevronDown 
@@ -67,7 +68,6 @@ export default function UserMenu({ profile, lang }: UserMenuProps) {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            /* תיקון קריטי: הצמדה לימין (right-0) מבטיחה שהתפריט יגדל שמאלה ולא ייחתך בשום שפה */
             className={`absolute top-14 right-0 w-72 bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(11,68,64,0.2)] border border-brand-mint overflow-hidden z-[999]`}
             dir={isRtl ? 'rtl' : 'ltr'}
           >

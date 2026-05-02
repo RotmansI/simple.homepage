@@ -1,10 +1,20 @@
 "use client";
 import React, { useState } from 'react';
 
-export const Heading = ({ content }: { content: any }) => {
+// הגדרת ה-Interface לקבלת content ו-site
+interface HeadingProps {
+  content: any;
+  site?: any;
+}
+
+export const Heading = ({ content, site }: HeadingProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   if (!content) return null;
+
+  // חילוץ שפת האתר וקביעת כיווניות
+  const siteLanguage = site?.theme_settings?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
 
   const {
     text = 'New Heading',
@@ -90,7 +100,6 @@ export const Heading = ({ content }: { content: any }) => {
     return 'none';
   };
 
-  // אפקט Glow ב-Hover
   const getGlowShadow = (isHover: boolean) => {
     if (isHover && hover_enabled && hover_type === 'glow') {
       const c = hover_glow_color || '#6366f1';
@@ -106,17 +115,19 @@ export const Heading = ({ content }: { content: any }) => {
     getGlowShadow(isHovered)
   ].filter(s => s !== 'none').join(', ');
 
-  // חישוב צבע הטקסט (רגיל לעומת Hover)
   const finalTextColor = (isHovered && hover_enabled && hover_type === 'colors_swap')
     ? hover_text_color
     : (text_color || 'inherit');
+
+  // לוגיקת יישור: עדיפות להגדרה מפורשת, אחרת לפי שפת האתר
+  const finalTextAlign = align || text_align || (isRTL ? 'right' : 'left');
 
   const style: React.CSSProperties = {
     color: finalTextColor,
     fontSize: font_size ? `${font_size}px` : 'inherit',
     fontWeight: font_weight || '400',
     fontStyle: italic ? 'italic' : 'normal',
-    textAlign: (align || text_align || 'left') as any,
+    textAlign: finalTextAlign as any,
     textTransform: uppercase ? 'uppercase' : 'none',
     textDecoration: [
       underline ? 'underline' : '',
@@ -135,17 +146,16 @@ export const Heading = ({ content }: { content: any }) => {
     marginBottom: `${margin_bottom ?? 0}px`,
     opacity: (opacity ?? 100) / 100,
     width: '100%',
-    // אינטראקציות
     cursor: link_enabled ? 'pointer' : 'default',
     transition: `all ${hover_transition || 0.3}s ease-in-out`,
     transform: (isHovered && hover_enabled && hover_type === 'scale_up') 
       ? `scale(${hover_scale || 1.1})` 
       : 'scale(1)',
-    zIndex: isHovered ? 10 : 1, // מבטיח שהגדלה תעלה על אלמנטים אחרים
+    zIndex: isHovered ? 10 : 1,
     position: 'relative',
+    direction: isRTL ? 'rtl' : 'ltr' // הבטחת כיווניות הטקסט והפיסוק
   };
 
-  // רכיב ה-Heading עצמו
   const HeadingElement = (
     <h2 
       style={style} 
@@ -153,7 +163,6 @@ export const Heading = ({ content }: { content: any }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Wrapping Lines Effect */}
       {hover_enabled && hover_type === 'wrapping_lines' && (
         <>
           <span 
@@ -170,7 +179,6 @@ export const Heading = ({ content }: { content: any }) => {
     </h2>
   );
 
-  // אם הלינק דולק, עוטפים ב-A tag
   if (link_enabled && link_url) {
     return (
       <a 

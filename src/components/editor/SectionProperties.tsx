@@ -14,6 +14,8 @@ import { FlexSettings } from './FlexSettings';
 import { GallerySettings } from './GallerySettings';
 import { SectionBackgroundGroup } from './settings/groups/SectionBackgroundGroup';
 import MenuSectionSettings from './MenuSectionSettings';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 type AssetCallback = (url: string) => void;
 
@@ -69,13 +71,16 @@ export default function SectionProperties(props: SectionPropertiesProps) {
     activePanel,
   } = props;
 
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
+
   const handleBackToPage = () => {
     setSelectedId(null);
     setSelectedFlexElementId(null);
   };
 
   // לוגיקת רינדור התוכן הפנימי (מופרדת מה-aside)
-  const renderContent = () => {
+const renderContent = () => {
     if (!selectedSection) {
       const currentPage = pages[activePageKey];
       const updatePage = (updates: any) => {
@@ -85,21 +90,22 @@ export default function SectionProperties(props: SectionPropertiesProps) {
       };
 
       return (
-        <div className="w-80 h-full flex flex-col">
+        <div className="w-80 h-full flex flex-col" dir={lang === 'he' ? 'rtl' : 'ltr'}>
           <div className="p-6 border-b border-brand-lavender bg-brand-pearl/30">
             <div className="flex flex-col text-start">
-              <span className="text-[10px] font-black uppercase text-brand-slate tracking-widest leading-none mb-1">General</span>
-              <h2 className="text-[12px] font-black uppercase text-brand-midnight">Page Settings</h2>
+              <span className="text-[10px] font-black uppercase text-brand-slate tracking-widest leading-none mb-1">{t.editor.sidebar.pageSettings.groupTitle}</span>
+              <h2 className="text-[12px] font-black uppercase text-brand-midnight">{t.editor.sidebar.pageSettings.panelTitle}</h2>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar text-start pb-20">
             <div className="space-y-4">
-              <PropertyInput label="Internal Page Name" value={currentPage?.name || ''} onChange={(val: string) => updatePage({ name: val })} />
+              <PropertyInput label={t.editor.sidebar.pageSettings.internalName} value={currentPage?.name || ''} onChange={(val: string) => updatePage({ name: val })} />
               <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase text-brand-midnight/40 ml-1">URL Slug</span>
-                <div className="flex items-center bg-brand-pearl rounded-xl border border-brand-lavender/50 overflow-hidden shadow-inner">
-                  <span className="pl-3 text-[10px] font-bold text-brand-slate/40 select-none">/</span>
+                <span className="text-[10px] font-black uppercase text-brand-midnight/40 ml-1">{t.editor.sidebar.pageSettings.urlSlug}</span>
+                <div className="flex items-center bg-brand-pearl rounded-xl border border-brand-lavender/50 overflow-hidden shadow-inner" dir='ltr'>
+                  <span className="pl-3 text-[10px] font-bold text-brand-slate/40 select-none ml-1">/</span>
                   <input 
+                    dir='ltr'
                     type="text"
                     disabled={activePageKey === 'home'} 
                     className={`w-full bg-transparent p-3 pl-1 text-[11px] font-bold outline-none transition-all ${activePageKey === 'home' ? 'opacity-50' : 'text-brand-indigo'}`}
@@ -110,13 +116,13 @@ export default function SectionProperties(props: SectionPropertiesProps) {
               </div>
             </div>
             <div className="pt-6 border-t border-brand-lavender space-y-2">
-              <span className="text-[10px] font-black uppercase text-brand-midnight tracking-widest block mb-2">Page Appearance</span>
+              <span className="text-[10px] font-black uppercase text-brand-midnight tracking-widest block mb-2">{t.editor.sidebar.pageSettings.appearance}</span>
               <SectionBackgroundGroup content={currentPage || {}} updateContent={updatePage} onOpenAssetManager={(cb: AssetCallback) => selectAssetForField(undefined, 'page_bg_image', undefined, cb)} site={site} />
             </div>
             {activePageKey !== 'home' && (
               <div className="pt-10 border-t border-brand-lavender">
-                <button onClick={() => { if (window.confirm(`Delete page?`)) deletePage(activePageKey); }} className="w-full py-2.5 bg-brand-coral/5 border border-brand-coral/30 rounded-xl text-brand-coral text-[10px] font-black hover:bg-brand-coral hover:text-white transition-all flex items-center justify-center gap-2">
-                  <Trash2 size={14} /> DELETE PAGE
+                <button onClick={() => { if (window.confirm(t.editor.sidebar.pageSettings.actions.confirmDelete)) deletePage(activePageKey); }} className="w-full py-2.5 bg-brand-coral/5 border border-brand-coral/30 rounded-xl text-brand-coral text-[10px] font-black hover:bg-brand-coral hover:text-white transition-all flex items-center justify-center gap-2">
+                  <Trash2 size={14} /> {t.editor.sidebar.pageSettings.actions.delete}
                 </button>
               </div>
             )}
@@ -125,30 +131,39 @@ export default function SectionProperties(props: SectionPropertiesProps) {
       );
     }
 
+    // לוגיקת חילוץ שם אלמנט מתורגם
     const currentElement = selectedSection?.content?.elements?.find((e: any) => e.id === selectedFlexElementId);
-    const elementTypeName = currentElement?.type ? currentElement.type.toUpperCase() : 'ELEMENT';
+    
+    // שליפה בטוחה של סוג האלמנט מתוך מפת התרגומים ב-sidebar.ts
+    const translatedTypeName = currentElement?.type 
+      ? t.editor.sidebar.sections.elementTypes[currentElement.type as keyof typeof t.editor.sidebar.sections.elementTypes] 
+      : t.editor.sidebar.sectionProperties.defaultElementName;
 
     return (
-      <div className="w-80 h-full flex flex-col">
+      <div className="w-80 h-full flex flex-col" dir={lang === 'he' ? 'rtl' : 'ltr'}>
         <div className="p-6 border-b border-brand-lavender bg-brand-pearl/20">
           <div className="flex items-center gap-1.5 text-[9px] font-black text-brand-slate uppercase tracking-widest mb-1 overflow-hidden">
             <button onClick={handleBackToPage} className="opacity-50 hover:opacity-100 truncate hover:text-brand-indigo transition-all">
               {pages[activePageKey]?.name || activePageKey}
             </button>
-            <ChevronRight size={10} className="opacity-30 flex-shrink-0" />
+            <ChevronRight size={10} className={`opacity-30 flex-shrink-0 ${lang === 'he' ? 'rotate-180' : ''}`}/>
             <button onClick={() => setSelectedFlexElementId(null)} className={`truncate ${selectedFlexElementId ? 'text-brand-indigo hover:opacity-70 underline decoration-brand-indigo/30 underline-offset-2' : 'text-brand-indigo pointer-events-none'}`}>
               {selectedSection.name || selectedSection.type}
             </button>
             {selectedFlexElementId && (
               <>
-                <ChevronRight size={10} className="opacity-30 flex-shrink-0" />
-                <span className="text-brand-indigo truncate">{elementTypeName}</span>
+                <ChevronRight size={10} className={`opacity-30 flex-shrink-0 ${lang === 'he' ? 'rotate-180' : ''}`} />
+                {/* הצגת השם המתורגם (למשל: "תמונה" או "כותרת") */}
+                <span className="text-brand-indigo truncate">{translatedTypeName}</span>
               </>
             )}
           </div>
           <div className="flex items-center justify-between">
             <h2 className="text-[12px] font-black uppercase text-brand-midnight">
-              {selectedFlexElementId ? `${elementTypeName} Settings` : 'Section Settings'}
+              {/* כותרת הפאנל: משלבת את סוג האלמנט עם "הגדרות אלמנט" */}
+              {selectedFlexElementId 
+                ? `${t.editor.sidebar.sectionProperties.elementTitle} ״${translatedTypeName}״ ` 
+                : t.editor.sidebar.sectionProperties.sectionTitle}
             </h2>
             {!selectedFlexElementId && (
               <button onClick={() => deleteSection(selectedSection.id)} className="p-2 rounded-xl border border-brand-coral/20 text-brand-coral hover:bg-brand-coral hover:text-white transition-all">
@@ -168,10 +183,10 @@ export default function SectionProperties(props: SectionPropertiesProps) {
   };
 
 return (
-  <div className="relative flex h-full">
+  <div className="relative flex h-full" dir={lang === 'he' ? 'rtl' : 'ltr'}>
     {/* 1. כפתור Handle קבוע עם חץ משתנה */}
     <div 
-      className="absolute top-1/2 -left-4 -translate-y-1/2 z-50 transition-all duration-500"
+      className={`absolute top-1/2 -left-4 -translate-y-1/2 z-50 transition-all duration-500`}
     >
       <button 
         onClick={toggleSidebar}
@@ -190,7 +205,6 @@ return (
     <aside 
       className={`
         bg-white border-s border-brand-lavender flex flex-col z-40 shadow-sm text-start 
-        // אלו ה-classes שיוצרים את ההחלקה
         transition-all duration-500 ease-in-out overflow-hidden shrink-0
         ${isCollapsed ? 'w-0 border-s-0 opacity-0' : 'w-80 opacity-100'}
       `}

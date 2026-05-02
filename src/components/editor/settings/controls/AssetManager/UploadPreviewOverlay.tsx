@@ -3,14 +3,18 @@
 import React, { useState } from 'react';
 import { X, Folder, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 export const UploadPreviewOverlay = ({ pendingUpload, siteId, currentPath, onClose, onComplete, showToast }: any) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const [uploading, setUploading] = useState(false);
   const [name, setName] = useState(pendingUpload.name);
 
   const executeUpload = async () => {
     if (!name.trim()) {
-      showToast("Please enter a file name", "error");
+      showToast(t.editor.modals.assetManager.uploadPreview.errors.emptyName, "error");
       return;
     }
 
@@ -32,7 +36,7 @@ export const UploadPreviewOverlay = ({ pendingUpload, siteId, currentPath, onClo
       // הצלחה - קריאה לפונקציית הסיום ב"מוח המרכזי"
       onComplete();
     } catch (err: any) {
-      showToast(err.message || "Upload failed", "error");
+      showToast(err.message || t.editor.modals.assetManager.uploadPreview.errors.uploadFailed, "error");
     } finally {
       setUploading(false);
     }
@@ -53,8 +57,8 @@ export const UploadPreviewOverlay = ({ pendingUpload, siteId, currentPath, onClo
       <div className="w-[400px] bg-white border-l border-brand-lavender/20 p-10 flex flex-col text-start shadow-[-20px_0_50px_rgba(0,0,0,0.02)]">
         <div className="mb-10 flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-black text-brand-dark tracking-tighter">Confirm Upload</h3>
-            <p className="text-[11px] font-bold text-brand-charcoal/30 uppercase tracking-widest mt-1 leading-none">Adding to your library</p>
+            <h3 className="text-xl font-black text-brand-dark tracking-tighter">{t.editor.modals.assetManager.uploadPreview.title}</h3>
+            <p className="text-[11px] font-bold text-brand-charcoal/30 uppercase tracking-widest mt-1 leading-none">{t.editor.modals.assetManager.uploadPreview.subtitle}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-brand-grey rounded-full transition-all text-brand-charcoal/30">
             <X size={24} />
@@ -63,19 +67,19 @@ export const UploadPreviewOverlay = ({ pendingUpload, siteId, currentPath, onClo
 
         <div className="space-y-8 flex-1">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">Destination Folder</label>
+            <label className="text-[10px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">{t.editor.modals.assetManager.uploadPreview.destLabel}</label>
             <div className="flex items-center gap-3 bg-brand-grey/50 p-4 rounded-2xl text-[11px] font-bold text-brand-charcoal/60">
-              <Folder size={16} className="text-brand-main" /> {currentPath || 'Root Library'}
+              <Folder size={16} className="text-brand-main" /> {currentPath || t.editor.modals.assetManager.uploadPreview.rootLocation}
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">Asset Name</label>
+            <label className="text-[10px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">{t.editor.modals.assetManager.uploadPreview.nameLabel}</label>
             <input 
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full bg-brand-grey/50 p-4 rounded-2xl font-bold text-brand-dark outline-none focus:ring-2 ring-brand-main transition-all"
-              placeholder="Give this file a name..."
+              placeholder={t.editor.modals.assetManager.uploadPreview.namePlaceholder}
             />
           </div>
         </div>
@@ -86,7 +90,7 @@ export const UploadPreviewOverlay = ({ pendingUpload, siteId, currentPath, onClo
             disabled={uploading}
             className="w-full py-5 bg-brand-main text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-brand-main/20 transition-all flex items-center justify-center gap-2"
           >
-            {uploading ? <Loader2 className="animate-spin" /> : <><Check size={18} /> Finish & Upload</>}
+            {uploading ? <Loader2 className="animate-spin" /> : <><Check size={18} /> {t.editor.modals.assetManager.uploadPreview.finishBtn}</>}
           </button>
         </div>
       </div>

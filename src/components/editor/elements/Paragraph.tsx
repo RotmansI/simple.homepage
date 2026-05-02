@@ -1,10 +1,20 @@
 "use client";
 import React, { useState } from 'react';
 
-export const Paragraph = ({ content }: { content: any }) => {
+// הגדרת ה-Interface לקבלת content ו-site
+interface ParagraphProps {
+  content: any;
+  site?: any;
+}
+
+export const Paragraph = ({ content, site }: ParagraphProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   if (!content) return null;
+
+  // חילוץ שפת האתר וקביעת כיווניות
+  const siteLanguage = site?.theme_settings?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
 
   const {
     text = 'Add your text content here...',
@@ -89,11 +99,10 @@ export const Paragraph = ({ content }: { content: any }) => {
     `;
   };
 
-  // 3. Drop Shadow דינמי (Intensity או חופשי) - תיקון לוגיקת הזרימה
+  // 3. Drop Shadow דינמי
   const getShadow = () => {
     const color = shadow_color || shadow_c || 'rgba(0,0,0,0.2)';
     
-    // בדיקת אינטנסיביות (Presets)
     if (shadow_intensity !== undefined && Number(shadow_intensity) > 0) {
       switch (Number(shadow_intensity)) {
         case 1: return `0px 2px 4px ${color}`;   
@@ -102,12 +111,10 @@ export const Paragraph = ({ content }: { content: any }) => {
       }
     }
 
-    // בדיקת ערכים חופשיים (Custom) - עכשיו זה ירוץ גם אם אין אינטנסיביות
     if (shadow_blur !== undefined || shadow_x !== undefined || shadow_y !== undefined) {
       return `${shadow_x ?? 0}px ${shadow_y ?? 2}px ${shadow_blur ?? 4}px ${color}`;
     }
 
-    // תאימות אחורה לסוגי צל ישנים
     if (shadow_type && shadow_type !== 'none') {
       const blur = shadow_blur ?? 3;
       if (shadow_type === 'soft') return `0px 2px ${blur}px ${color}`;
@@ -138,12 +145,15 @@ export const Paragraph = ({ content }: { content: any }) => {
     ? hover_text_color
     : (text_color || 'inherit');
 
+  // לוגיקת יישור: עדיפות להגדרה מפורשת, אחרת לפי שפת האתר
+  const finalTextAlign = align || text_align || (isRTL ? 'right' : 'left');
+
   const style: React.CSSProperties = {
     color: finalTextColor,
     fontSize: font_size ? `${font_size}px` : '16px',
     fontWeight: font_weight || '400',
     fontStyle: italic ? 'italic' : 'normal',
-    textAlign: (align || text_align || 'left') as any,
+    textAlign: finalTextAlign as any,
     textTransform: uppercase ? 'uppercase' : 'none',
     textDecoration: [
       underline ? 'underline' : '',
@@ -154,7 +164,6 @@ export const Paragraph = ({ content }: { content: any }) => {
     lineHeight: line_height || 1.6,
     textShadow: combinedShadow || 'none',
     
-    // Box Model מלא
     paddingTop: `${padding_top ?? padding ?? 0}px`,
     paddingBottom: `${padding_bottom ?? padding ?? 0}px`,
     paddingLeft: `${padding_left ?? padding ?? 0}px`,
@@ -165,7 +174,6 @@ export const Paragraph = ({ content }: { content: any }) => {
     opacity: (opacity ?? 100) / 100,
     width: '100%',
 
-    // Interactions
     cursor: link_enabled ? 'pointer' : 'default',
     transition: `all ${hover_transition || 0.3}s ease-in-out`,
     transform: (isHovered && hover_enabled && hover_type === 'scale_up') 
@@ -174,7 +182,8 @@ export const Paragraph = ({ content }: { content: any }) => {
     zIndex: isHovered ? 10 : 1,
     position: 'relative',
     border: 'none',
-    borderRadius: '0px'
+    borderRadius: '0px',
+    direction: isRTL ? 'rtl' : 'ltr' // הבטחת כיווניות הטקסט
   };
 
   const ParagraphElement = (
@@ -184,7 +193,6 @@ export const Paragraph = ({ content }: { content: any }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Wrapping Lines Effect */}
       {hover_enabled && hover_type === 'wrapping_lines' && (
         <>
           <span 

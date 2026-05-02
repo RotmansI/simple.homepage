@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 import { 
   Phone, ImageIcon, Trash2, Plus, Type, Bold, Italic, 
   Palette, MousePointer2, Info, MapPin, MessageCircle, Navigation,
@@ -12,6 +14,8 @@ import { FcGoogle } from 'react-icons/fc';
 import { SmartColorPicker } from '../settings/controls/SmartColorPicker';
 
 export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const navData = site?.draft_data?.navbar || {};
   const [openSection, setOpenSection] = useState<string | null>('brand');
   
@@ -27,10 +31,10 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
 
   // רשימת הגדרות הצבע לעריכה
   const colorSettings = [
-    { key: 'bg_color', label: 'Navbar Background', value: navData.bg_color || '#000000' },
-    { key: 'link_color', label: 'Link Color (Default)', value: navData.link_color || '#ffffff' },
-    { key: 'link_hover_color', label: 'Link Color (Hover)', value: navData.link_hover_color || '#ffffff' },
-    { key: 'link_active_color', label: 'Link Color (Active)', value: navData.link_active_color || '#0B4440' },
+{ key: 'bg_color', label: t.editor.structure.navbarPanel.theme.colorLabels.bg_color, value: navData.bg_color || '#000000' },
+    { key: 'link_color', label: t.editor.structure.navbarPanel.theme.colorLabels.link_color, value: navData.link_color || '#ffffff' },
+    { key: 'link_hover_color', label: t.editor.structure.navbarPanel.theme.colorLabels.link_hover_color, value: navData.link_hover_color || '#41dcfb' },
+    { key: 'link_active_color', label: t.editor.structure.navbarPanel.theme.colorLabels.link_active_color, value: navData.link_active_color || '#21e1b4' },
   ];
 
   const currentActiveColor = colorSettings.find(c => c.key === activeColorKey);
@@ -63,23 +67,23 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
     <div className="p-4 space-y-3 text-start animate-in fade-in duration-300 custom-scrollbar overflow-y-auto max-h-screen pb-24">
       
       {/* 1. HEADER TITLE */}
-      <div className="px-1 py-2 mb-2">
+      <div className="px-1 py-2 mb-2 " dir={lang === 'he' ? 'rtl' : 'ltr'}>
         <h1 className="text-[14px] font-black uppercase text-brand-midnight tracking-tighter flex items-center gap-2">
           <Navigation size={18} className="text-brand-main" />
-          Navigation Bar Settings
+          {t.editor.structure.navbarPanel.headerTitle}
         </h1>
-        <p className="text-[10px] text-brand-slate font-medium opacity-60 uppercase tracking-widest mt-1">Configure layout, colors and links</p>
+        <p className="text-[10px] text-brand-slate font-medium opacity-60 uppercase tracking-widest mt-1">{t.editor.structure.navbarPanel.headerSubtitle}</p>
       </div>
 
       {/* 2. BRAND IDENTITY SECTION */}
-      <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm">
+      <div className="border border-brand-lavender/30 rounded-2xl overflow-hidden bg-white shadow-sm" dir={lang === 'he' ? 'rtl' : 'ltr'}>
         <button 
           onClick={() => toggleSection('brand')}
-          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/40 transition-all"
+          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/50 transition-all"
         >
           <div className="flex items-center gap-2">
             <MousePointer2 size={14} className="text-brand-main" />
-            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">Brand Identity</span>
+            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">{t.editor.structure.navbarPanel.sections.brand}</span>
           </div>
           {openSection === 'brand' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
@@ -91,13 +95,13 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                 onClick={() => updateNavbar({ use_image: false })} 
                 className={`flex-1 py-2 rounded-lg text-[9px] font-black transition-all flex items-center justify-center gap-2 ${!navData.use_image ? 'bg-white text-brand-indigo shadow-sm' : 'text-brand-charcoal/40 hover:bg-white/50'}`}
               >
-                <Type size={14} /> TEXT
+                <Type size={14} /> {t.editor.structure.navbarPanel.brand.textMode}
               </button>
               <button 
                 onClick={() => updateNavbar({ use_image: true })} 
                 className={`flex-1 py-2 rounded-lg text-[9px] font-black transition-all flex items-center justify-center gap-2 ${navData.use_image ? 'bg-white text-brand-indigo shadow-sm' : 'text-brand-charcoal/40 hover:bg-white/50'}`}
               >
-                <ImageIcon size={14} /> LOGO
+                <ImageIcon size={14} /> {t.editor.structure.navbarPanel.brand.logoMode}
               </button>
             </div>
             
@@ -114,16 +118,16 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                   ) : (
                     <div className="text-center space-y-1 opacity-20">
                       <ImageIcon size={32} className="mx-auto" />
-                      <span className="text-[8px] font-black block uppercase">No Logo Set</span>
+                      <span className="text-[8px] font-black block uppercase">{t.editor.structure.navbarPanel.brand.noLogo}</span>
                     </div>
                   )}
                 </div>
                 <button onClick={() => selectAssetForField(undefined, 'brand_image')} className="w-full py-3 bg-brand-indigo text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2 shadow-sm hover:bg-brand-indigo/90 transition-all">
-                  <Plus size={14}/> {navData.brand_image ? 'CHANGE LOGO' : 'SELECT LOGO'}
+                  <Plus size={14}/> {navData.brand_image ? t.editor.structure.navbarPanel.brand.changeLogo : t.editor.structure.navbarPanel.brand.selectLogo}
                 </button>
                 <div className="flex items-start gap-2 p-3 bg-brand-pearl rounded-xl border border-brand-lavender/50 text-[10px] text-brand-charcoal/60 leading-tight">
                   <Info size={14} className="text-brand-indigo shrink-0" />
-                  <p><strong>Recommended: </strong>PNG with transparent background. <strong>Height:</strong> 120px.</p>
+                  <p><strong>{t.editor.structure.navbarPanel.brand.recommended}</strong>{t.editor.structure.navbarPanel.brand.logoNote}</p>
                 </div>
               </div>
             ) : (
@@ -142,7 +146,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                 </div>
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">Brand Name</span>
+                    <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">{t.editor.structure.navbarPanel.brand.brandNameLabel}</span>
                     <input 
                       className="w-full bg-white p-3 rounded-xl text-[12px] font-bold border border-brand-lavender outline-none focus:border-brand-indigo shadow-inner"
                       value={navData.brand_text || ''}
@@ -160,7 +164,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">Typography</span>
+                    <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">{t.editor.structure.navbarPanel.brand.typographyLabel}</span>
                     <select className="w-full bg-white p-3 rounded-xl text-[10px] font-bold border border-brand-lavender outline-none focus:border-brand-indigo shadow-sm" value={navData.text_font || ''} onChange={(e) => updateNavbar({ text_font: e.target.value })}>
                       {fontOptions.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
                     </select>
@@ -173,14 +177,14 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
       </div>
 
 {/* 3. NAVIGATION THEME SECTION */}
-<div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm">
+<div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm" dir={lang === 'he' ? 'rtl' : 'ltr'}>
   <button 
     onClick={() => toggleSection('theme')}
-    className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/40 transition-all"
+    className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/50 transition-all"
   >
     <div className="flex items-center gap-2">
       <Paintbrush size={14} className="text-brand-main" />
-      <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">Navigation Theme</span>
+      <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">{t.editor.structure.navbarPanel.sections.theme}</span>
     </div>
     {openSection === 'theme' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
   </button>
@@ -191,7 +195,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
       {/* Smart Selector & Internal SmartColorPicker Component */}
       <div className="space-y-4 p-4 bg-brand-pearl/30 rounded-2xl border border-brand-lavender/30">
         <div className="space-y-1">
-          <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">Select Element to Edit</span>
+          <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">{t.editor.structure.navbarPanel.theme.selectElement}</span>
           <select 
             className="w-full bg-white p-3 rounded-xl text-[10px] font-bold border border-brand-lavender outline-none focus:border-brand-indigo shadow-sm transition-all"
             value={activeColorKey}
@@ -212,7 +216,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
 
       {/* Color Legend - מאפשר מעבר מהיר בלחיצה על השורה */}
       <div className="space-y-2">
-        <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">Active Colors Legend</span>
+        <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">{t.editor.structure.navbarPanel.theme.colorLegend}</span>
         <div className="grid grid-cols-1 gap-1.5">
           {colorSettings.map((c) => {
             const currentValue = navData[c.key] || (c.key === 'bg_color' ? '#000000' : '#ffffff');
@@ -220,7 +224,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
               <button 
                 key={c.key}
                 onClick={() => setActiveColorKey(c.key)}
-                className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${activeColorKey === c.key ? 'bg-brand-indigo/5 border-brand-indigo/30 ring-1 ring-brand-indigo/10' : 'bg-white border-brand-lavender hover:bg-brand-pearl/40'}`}
+                className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${activeColorKey === c.key ? 'bg-brand-indigo/5 border-brand-indigo/30 ring-1 ring-brand-indigo/10' : 'bg-white border-brand-lavender hover:bg-brand-pearl/50'}`}
               >
                 <div className="flex items-center gap-2">
                   <div 
@@ -242,14 +246,14 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
 </div>
 
       {/* 4. ACTION BUTTONS SECTION (NEW) */}
-      <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm">
+      <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm" dir={lang === 'he' ? 'rtl' : 'ltr'}>
         <button 
           onClick={() => toggleSection('actions')}
-          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/40 transition-all"
+          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/50 transition-all"
         >
           <div className="flex items-center gap-2">
             <ExternalLink size={14} className="text-brand-main" />
-            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">Action Buttons</span>
+            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">{t.editor.structure.navbarPanel.sections.actions}</span>
           </div>
           {openSection === 'actions' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
@@ -260,11 +264,12 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 ml-1">
                   <Calendar size={12} className="text-brand-indigo" />
-                  <span className="text-[8px] font-black opacity-40 uppercase block">Booking URL</span>
+                  <span className="text-[8px] font-black opacity-40 uppercase block">{t.editor.structure.navbarPanel.actions.bookingUrl}</span>
                 </div>
                 <input 
                   className="w-full bg-white p-3 rounded-xl text-[10px] font-medium border border-brand-lavender outline-none focus:border-brand-main shadow-sm"
-                  placeholder="https://book-a-table.com/..."
+                  dir='ltr'
+                  placeholder="https://..."
                   value={navData.booking_url || ''}
                   onChange={(e) => updateNavbar({ booking_url: e.target.value })}
                 />
@@ -273,11 +278,12 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 ml-1">
                   <ShoppingBag size={12} className="text-brand-indigo" />
-                  <span className="text-[8px] font-black opacity-40 uppercase block">Delivery & Takeout URL</span>
+                  <span className="text-[8px] font-black opacity-40 uppercase block">{t.editor.structure.navbarPanel.actions.deliveryUrl}</span>
                 </div>
                 <input 
                   className="w-full bg-white p-3 rounded-xl text-[10px] font-medium border border-brand-lavender outline-none focus:border-brand-main shadow-sm"
-                  placeholder="https://order-now.com/..."
+                  dir='ltr'
+                  placeholder="https://..."
                   value={navData.delivery_url || ''}
                   onChange={(e) => updateNavbar({ delivery_url: e.target.value })}
                 />
@@ -286,21 +292,21 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
             
             <div className="flex items-start gap-2 p-3 bg-brand-pearl rounded-xl border border-brand-lavender/50 text-[9px] text-brand-charcoal/60 leading-tight italic">
               <Info size={14} className="text-brand-indigo shrink-0" />
-              <p>Buttons will only appear on the live site if a URL is provided.</p>
+              <p>{t.editor.structure.navbarPanel.actions.note}</p>
             </div>
           </div>
         )}
       </div>
 
       {/* 5. CONTACT CHANNELS SECTION */}
-      <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm">
+      <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm" dir={lang === 'he' ? 'rtl' : 'ltr'}>
         <button 
           onClick={() => toggleSection('contact')}
-          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/40 transition-all"
+          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/50 transition-all"
         >
           <div className="flex items-center gap-2">
             <Phone size={14} className="text-brand-main" />
-            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">Contact Channels</span>
+            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">{t.editor.structure.navbarPanel.sections.contact}</span>
           </div>
           {openSection === 'contact' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
@@ -309,22 +315,22 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
           <div className="p-4 space-y-3 animate-in slide-in-from-top-2">
             <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-brand-lavender shadow-sm focus-within:border-brand-main transition-all">
               <Phone size={14} className="text-brand-indigo" />
-              <input className="bg-transparent text-[11px] outline-none flex-1 font-bold" placeholder="Main Business Phone" value={navData.phone || ''} onChange={(e) => updateNavbar({ phone: e.target.value })} />
+              <input className="bg-transparent text-[11px] outline-none flex-1 font-bold" dir='ltr' placeholder={t.editor.structure.navbarPanel.contact.phonePlaceholder} value={navData.phone || ''} onChange={(e) => updateNavbar({ phone: e.target.value })} />
             </div>
             <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-brand-lavender shadow-sm focus-within:border-brand-main transition-all">
               <FaInstagram size={14} className="text-brand-indigo" />
-              <input className="bg-transparent text-[10px] outline-none flex-1 font-medium" placeholder="Instagram Profile Link" value={navData.instagram || ''} onChange={(e) => updateNavbar({ instagram: e.target.value })} />
+              <input className="bg-transparent text-[10px] outline-none flex-1 font-medium" dir='ltr' placeholder={t.editor.structure.navbarPanel.contact.igPlaceholder} value={navData.instagram || ''} onChange={(e) => updateNavbar({ instagram: e.target.value })} />
             </div>
             <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-brand-lavender shadow-sm focus-within:border-brand-main transition-all">
               <FaFacebook size={14} className="text-brand-indigo" />
-              <input className="bg-transparent text-[10px] outline-none flex-1 font-medium" placeholder="Facebook Business Page" value={navData.facebook || ''} onChange={(e) => updateNavbar({ facebook: e.target.value })} />
+              <input className="bg-transparent text-[10px] outline-none flex-1 font-medium" dir='ltr' placeholder={t.editor.structure.navbarPanel.contact.fbPlaceholder} value={navData.facebook || ''} onChange={(e) => updateNavbar({ facebook: e.target.value })} />
             </div>
 
             <div className="mt-4 p-4 bg-brand-pearl/30 rounded-2xl border border-brand-lavender/50 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-[#25D366]/10 rounded-lg"><FaWhatsapp size={16} className="text-[#25D366]"/></div>
-                  <span className="text-[10px] font-black uppercase tracking-tight">Enable WhatsApp</span>
+                  <span className="text-[10px] font-black uppercase tracking-tight">{t.editor.structure.navbarPanel.contact.whatsappTitle}</span>
                 </div>
                 <button onClick={() => updateNavbar({ whatsapp: !navData.whatsapp })} className={`w-10 h-5 rounded-full transition-all relative ${navData.whatsapp ? 'bg-[#25D366]' : 'bg-brand-lavender'}`}>
                   <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${navData.whatsapp ? 'right-1' : 'left-1'}`} />
@@ -334,11 +340,11 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
               {navData.whatsapp && (
                 <div className="animate-in slide-in-from-top-2 space-y-4 pt-1">
                   <div className="space-y-1">
-                    <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">WhatsApp Phone Number</span>
-                    <input className="w-full bg-white p-3 rounded-xl text-[10px] font-mono border border-[#25D366]/30 shadow-inner outline-none focus:border-[#25D366]" placeholder="972XXXXXXXXX" value={navData.whatsapp_phone || ''} onChange={(e) => updateNavbar({ whatsapp_phone: e.target.value })} />
+                    <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">{t.editor.structure.navbarPanel.contact.whatsappLabel}</span>
+                    <input className="w-full bg-white p-3 rounded-xl text-[10px] font-mono border border-[#25D366]/30 shadow-inner outline-none focus:border-[#25D366]" dir='ltr' placeholder="972XXXXXXXXX" value={navData.whatsapp_phone || ''} onChange={(e) => updateNavbar({ whatsapp_phone: e.target.value })} />
                     <div className="flex items-start gap-2 p-3 bg-brand-pearl rounded-xl border border-brand-lavender/50 text-[10px] text-brand-charcoal/60 leading-tight">
                       <Info size={14} className="text-brand-indigo shrink-0" />
-                      <p>Leave blank if same as contact number.</p>
+                      <p>{t.editor.structure.navbarPanel.contact.whatsappNote}</p>
                     </div>
                   </div>
 
@@ -346,7 +352,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <MessageSquare size={14} className="text-brand-main" />
-                        <span className="text-[10px] font-black uppercase tracking-tight">Enable Floating Icon</span>
+                        <span className="text-[10px] font-black uppercase tracking-tight">{t.editor.structure.navbarPanel.contact.floatingIcon}</span>
                       </div>
                       <button onClick={() => updateNavbar({ whatsapp_floating: !navData.whatsapp_floating })} className={`w-8 h-4 rounded-full transition-all relative ${navData.whatsapp_floating ? 'bg-brand-main' : 'bg-brand-lavender'}`}>
                         <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${navData.whatsapp_floating ? 'right-0.5' : 'left-0.5'}`} />
@@ -355,7 +361,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
 
                     {navData.whatsapp_floating && (
                       <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-brand-lavender shadow-sm animate-in zoom-in-95">
-                        <span className="text-[9px] font-black uppercase opacity-40 ml-1">Icon Position</span>
+                        <span className="text-[9px] font-black uppercase opacity-40 ml-1">{t.editor.structure.navbarPanel.contact.iconPosition}</span>
                         <div className="flex bg-brand-pearl p-1 rounded-lg">
                            <button 
                             onClick={() => updateNavbar({ whatsapp_float_pos: 'left' })}
@@ -381,14 +387,14 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
       </div>
 
       {/* 6. LOCATION & NAVIGATION SECTION */}
-      <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm">
+      <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm" dir={lang === 'he' ? 'rtl' : 'ltr'}>
         <button 
           onClick={() => toggleSection('location')}
-          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/40 transition-all"
+          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/50 transition-all"
         >
           <div className="flex items-center gap-2">
             <Navigation size={14} className="text-brand-main" />
-            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">Location & Navigation</span>
+            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">{t.editor.structure.navbarPanel.sections.location}</span>
           </div>
           {openSection === 'location' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
@@ -396,16 +402,16 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
         {openSection === 'location' && (
           <div className="p-4 space-y-4 animate-in slide-in-from-top-2">
             <div className="space-y-3">
-              <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">Physical Address</span>
-              <textarea className="w-full bg-white p-3 rounded-xl text-[10px] font-medium resize-none border border-brand-lavender outline-none focus:border-brand-main shadow-sm" rows={2} placeholder="Physical Business Address" value={navData.address || ''} onChange={(e) => updateNavbar({ address: e.target.value })} />
+              <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">{t.editor.structure.navbarPanel.location.addressLabel}</span>
+              <textarea className="w-full bg-white p-3 rounded-xl text-[10px] font-medium resize-none border border-brand-lavender outline-none focus:border-brand-main shadow-sm" rows={2} placeholder={t.editor.structure.navbarPanel.location.addressPlaceholder} value={navData.address || ''} onChange={(e) => updateNavbar({ address: e.target.value })} />
               
-              <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">Navigation Shortcuts</span>
+              <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">{t.editor.structure.navbarPanel.location.shortcuts}</span>
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => updateNavbar({ show_waze: !navData.show_waze })} className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 text-[9px] font-black transition-all ${navData.show_waze ? 'bg-[#33CCFF] text-white border-[#33CCFF] shadow-md' : 'bg-white border-brand-lavender opacity-40 grayscale hover:opacity-100 hover:grayscale-0'}`}>
-                  <FaWaze size={14} className={navData.show_waze ? 'text-white' : 'text-[#33CCFF]'} /> WAZE
+                  <FaWaze size={14} className={navData.show_waze ? 'text-white' : 'text-[#33CCFF]'} /> {t.editor.structure.navbarPanel.location.waze}
                 </button>
                 <button onClick={() => updateNavbar({ show_google: !navData.show_google })} className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 text-[9px] font-black transition-all ${navData.show_google ? 'bg-white text-brand-midnight border-brand-lavender shadow-md' : 'bg-white border-brand-lavender opacity-40 grayscale hover:opacity-100 hover:grayscale-0'}`}>
-                  <FcGoogle size={14} /> MAPS
+                  <FcGoogle size={14} /> {t.editor.structure.navbarPanel.location.maps}
                 </button>
               </div>
             </div>

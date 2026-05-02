@@ -1,6 +1,6 @@
-export type Language = 'en' | 'he';
+// src/lib/translations/dashboard.ts
 
-export const translations = {
+export const dashboardTranslations = {
   en: {
     // General
     dir: 'ltr',

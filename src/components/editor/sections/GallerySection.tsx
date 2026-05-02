@@ -17,7 +17,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/effect-coverflow';
 
-export default function GallerySection({ section, isEditor, updateContent }: any) {
+export default function GallerySection({ section, isEditor, updateContent, site }: any) {
   const { content } = section;
   const settings = content.gallery_settings || {};
   const elements = content.elements || [];
@@ -27,32 +27,34 @@ export default function GallerySection({ section, isEditor, updateContent }: any
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [domLoaded, setDomLoaded] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-  
-useEffect(() => {
-  setDomLoaded(true);
 
-  // הוספת בדיקת typeof מחמירה כדי למנוע קריסה
-  if (isEditor && typeof updateContent === 'function') {
-    const hasGalleryElement = elements.some((e: any) => e.type === 'gallery-content');
-    
-    if (!hasGalleryElement) {
-      const galleryElement = { 
-        id: `gal-root-${Math.random().toString(36).substr(2, 9)}`, 
-        type: 'gallery-content' 
-      };
+  // חילוץ שפת האתר וקביעת כיווניות
+  const siteLanguage = site?.theme_settings?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
+  
+  useEffect(() => {
+    setDomLoaded(true);
+
+    if (isEditor && typeof updateContent === 'function') {
+      const hasGalleryElement = elements.some((e: any) => e.type === 'gallery-content');
       
-      updateContent({
-        elements: [galleryElement, ...elements]
-      });
+      if (!hasGalleryElement) {
+        const galleryElement = { 
+          id: `gal-root-${Math.random().toString(36).substr(2, 9)}`, 
+          type: 'gallery-content' 
+        };
+        
+        updateContent({
+          elements: [galleryElement, ...elements]
+        });
+      }
     }
-  }
-}, [isEditor, elements, updateContent]);
+  }, [isEditor, elements, updateContent]);
 
   const isCarousel = settings.layout === 'carousel';
   const hasMinImages = rawImages.length >= 10;
   const shouldShowCarousel = isCarousel && (hasMinImages || isEditor);
 
-  // שכפול וירטואלי למניעת קפיצות ב-Carousel
   const carouselImages = useMemo(() => {
     if (isCarousel && rawImages.length > 0 && rawImages.length < 20) {
       return [...rawImages, ...rawImages]; 
@@ -60,7 +62,6 @@ useEffect(() => {
     return rawImages;
   }, [rawImages, isCarousel]);
 
-  // סטייל הסקשן (תואם ל-FlexSection)
   const sectionStyle: React.CSSProperties = {
     backgroundColor: content.is_transparent ? 'transparent' : (content.bg_color || '#ffffff'),
     backgroundImage: (!content.is_transparent && content.bg_image) ? `url(${content.bg_image})` : 'none',
@@ -68,7 +69,8 @@ useEffect(() => {
     backgroundPosition: 'center',
     position: 'relative',
     minHeight: '400px',
-    transition: 'all 0.5s ease-in-out'
+    transition: 'all 0.5s ease-in-out',
+    direction: isRTL ? 'rtl' : 'ltr' // קביעת כיווניות הסקשן
   };
 
   const getImageStyle = (isActive: boolean) => {
@@ -96,7 +98,9 @@ useEffect(() => {
       return (
         <div className="aspect-video w-full rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center bg-brand-pearl/20 border-brand-lavender text-brand-midnight/30">
           <ImageIcon size={32} className="mb-2 opacity-20" />
-          <p className="font-bold uppercase tracking-widest text-[10px]">Gallery is empty</p>
+          <p className="font-bold uppercase tracking-widest text-[10px]">
+            {isRTL ? 'הגלריה ריקה' : 'Gallery is empty'}
+          </p>
         </div>
       );
     }
@@ -112,12 +116,13 @@ useEffect(() => {
             </div>
           )}
           <Swiper
-            key={`swiper-${carouselImages.length}-${scale}`}
+            key={`swiper-${carouselImages.length}-${scale}-${isRTL ? 'rtl' : 'ltr'}`}
             effect={'coverflow'}
             grabCursor={true}
             centeredSlides={true}
             slidesPerView={'auto'}
             loop={hasMinImages}
+            dir={isRTL ? 'rtl' : 'ltr'} // תמיכה בכיווניות ה-Swiper
             loopAdditionalSlides={5}
             coverflowEffect={{
               rotate: 0,
@@ -160,7 +165,6 @@ useEffect(() => {
       );
     }
 
-    // Grid Layout Logic
     const gridCols = { 3: 'md:grid-cols-3', 6: 'md:grid-cols-6', 10: 'md:grid-cols-10' }[settings.columns_desktop as 3 | 6 | 10] || 'md:grid-cols-3';
     
     return (
@@ -193,7 +197,6 @@ useEffect(() => {
 
 return (
     <section className="relative py-24 px-8 md:px-20 overflow-hidden flex items-center justify-center" style={sectionStyle}>
-      {/* Overlay Layer - תמיכה בסנכרון צבעים ואופסיטי */}
       {!content.is_transparent && (
         <div 
           className="absolute inset-0 pointer-events-none transition-all duration-500" 
@@ -206,20 +209,18 @@ return (
       )}
 
       <div 
-        className="mx-auto flex flex-col items-center z-10 w-full"
+        className={`mx-auto flex flex-col z-10 w-full ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}
         style={{ width: `${settings.width_percent || 100}%`, maxWidth: content.max_width ? `${content.max_width}px` : '1400px' }}
       >
         <div className="flex flex-col w-full gap-4">
-          {/* בדיקה האם הגלריה מוגדרת כאלמנט ברשימה */}
           {elements && elements.some((e: any) => e.type === 'gallery-content') ? (
-            // רינדור רגיל לפי סדר האלמנטים (מאפשר Drag & Drop)
             elements.map((el: any) => (
               <React.Fragment key={el.id}>
                 {el.type === 'gallery-content' && <div className="w-full my-8">{renderGalleryGrid()}</div>}
-                {el.type === 'heading' && <Heading content={el} />}
-                {el.type === 'paragraph' && <Paragraph content={el} />}
-                {el.type === 'button' && <ButtonElement content={el} />}
-                {el.type === 'image' && <ImageElement content={el} />}
+                {el.type === 'heading' && <Heading content={el} site={site} />}
+                {el.type === 'paragraph' && <Paragraph content={el} site={site} />}
+                {el.type === 'button' && <ButtonElement content={el} site={site} />}
+                {el.type === 'image' && <ImageElement content={el} site={site} />}
                 {el.type === 'spacer' && (
                   <div 
                     style={{ 
@@ -234,15 +235,14 @@ return (
               </React.Fragment>
             ))
           ) : (
-            // Fallback: אם אין אלמנט גלריה ברשימה, נציג את הגלריה כבסיס ואת שאר האלמנטים מסביב
             <>
               <div className="w-full my-8">{renderGalleryGrid()}</div>
               {elements && elements.map((el: any) => (
                 <React.Fragment key={el.id}>
-                  {el.type === 'heading' && <Heading content={el} />}
-                  {el.type === 'paragraph' && <Paragraph content={el} />}
-                  {el.type === 'button' && <ButtonElement content={el} />}
-                  {el.type === 'image' && <ImageElement content={el} />}
+                  {el.type === 'heading' && <Heading content={el} site={site} />}
+                  {el.type === 'paragraph' && <Paragraph content={el} site={site} />}
+                  {el.type === 'button' && <ButtonElement content={el} site={site} />}
+                  {el.type === 'image' && <ImageElement content={el} site={site} />}
                   {el.type === 'spacer' && (
                     <div 
                       style={{ 
@@ -266,7 +266,7 @@ return (
           <button className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[1010]"><X size={40} /></button>
           
           <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev! > 0 ? prev! - 1 : rawImages.length - 1); }} className="absolute left-6 text-white/30 hover:text-white transition-all hover:scale-110 z-[1010]">
-            <ChevronLeft size={60} strokeWidth={1} />
+            {isRTL ? <ChevronRight size={60} strokeWidth={1} /> : <ChevronLeft size={60} strokeWidth={1} />}
           </button>
 
           <div className="relative max-w-[90vw] max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -277,7 +277,7 @@ return (
           </div>
 
           <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev! < rawImages.length - 1 ? prev! + 1 : 0); }} className="absolute right-6 text-white/30 hover:text-white transition-all hover:scale-110 z-[1010]">
-            <ChevronRight size={60} strokeWidth={1} />
+            {isRTL ? <ChevronLeft size={60} strokeWidth={1} /> : <ChevronRight size={60} strokeWidth={1} />}
           </button>
         </div>
       )}

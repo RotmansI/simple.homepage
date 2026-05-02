@@ -31,6 +31,10 @@ export const EditorCanvas = (props: any) => {
     site
   } = props;
 
+  // חילוץ שפת האתר לקביעת כיווניות הקנבס והאלמנטים
+  const siteLanguage = site?.theme_settings?.site_language || 'en';
+  const isRTL = siteLanguage === 'he';
+
   const WidgetButton = ({ onClick, icon, label }: any) => (
     <button 
       onClick={onClick}
@@ -53,6 +57,7 @@ return (
         ${isSidebarsCollapsed ? 'p-3' : 'p-3'} 
         ${activePanel === 'navbar' ? 'pt-0' : 'pt-3'}
       `}
+      dir={isRTL ? 'rtl' : 'ltr'} // הקנבס משקף את כיווניות האתר הנבחרת
     >
       <div 
         className={`
@@ -96,29 +101,33 @@ return (
               onClick={() => setSelectedId(s.id)} 
               className={`relative transition-all border-x-4 ${selectedId === s.id ? 'border-brand-main bg-brand-mint/5 z-10' : 'border-transparent hover:border-brand-mint/30'}`}
             >
-              {s.type === 'hero' && <HeroSection section={s} isSelected={selectedId === s.id} updateContent={(updates: any) => updateSectionContent(s.id, updates)} />}
-              {s.type === 'flex' && <FlexSection section={s} updateContent={(updates: any) => updateSectionContent(s.id, updates)} />}
-              {s.type === 'gallery' && <GallerySection section={s} isEditor={true} updateContent={(updates: any) => updateSectionContent(s.id, updates)} />}
-              {s.type === 'menu' && <MenuSection section={s} />}
-              {s.type === 'text' && <TextSection content={s.content} />}
-              {s.type === 'divider' && <DividerSection content={s.content} />}
+              {/* העברת אובייקט ה-site לכל הסקשנים לצורך תמיכה ב-RTL/LTR */}
+              {s.type === 'hero' && <HeroSection section={s} isSelected={selectedId === s.id} updateContent={(updates: any) => updateSectionContent(s.id, updates)} site={site} />}
+              {s.type === 'flex' && <FlexSection section={s} updateContent={(updates: any) => updateSectionContent(s.id, updates)} site={site} />}
+              {s.type === 'gallery' && <GallerySection section={s} isEditor={true} updateContent={(updates: any) => updateSectionContent(s.id, updates)} site={site} />}
+              {s.type === 'menu' && <MenuSection section={s} site={site} />}
+              {/* תיקון השגיאה: העברת section במקום content כדי להתאים ל-Interface החדש */}
+              {s.type === 'text' && <TextSection section={s} site={site} />}
+              {s.type === 'divider' && <DividerSection content={s.content} site={site} />}
             </div>
           ))}
 
           {sections.length === 0 && (
             <div className="flex-1 flex items-center justify-center py-40 border-2 border-dashed border-brand-mint/20 m-8 rounded-[2rem]">
-              <p className="text-brand-charcoal/20 font-black uppercase tracking-widest text-xs">Your canvas is empty</p>
+              <p className="text-brand-charcoal/20 font-black uppercase tracking-widest text-xs">
+                {isRTL ? 'הקנבס שלך ריק' : 'Your canvas is empty'}
+              </p>
             </div>
           )}
         </div>
       </div>
 
       {showAddModal && (
-<AddSectionModal 
-  isOpen={showAddModal} 
-  onClose={() => setShowAddModal(false)} 
-  onAddSection={addSection} 
-/>
+        <AddSectionModal 
+          isOpen={showAddModal} 
+          onClose={() => setShowAddModal(false)} 
+          onAddSection={addSection} 
+        />
       )}
     </main>
   );

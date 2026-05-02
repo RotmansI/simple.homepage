@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Folder, Check, Edit3, Trash2, Loader2, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 export const AssetGrid = ({ 
   assets, 
@@ -17,6 +19,8 @@ export const AssetGrid = ({
   onRefresh
 }: any) => {
 
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleFolderClick = (folderName: string) => {
@@ -26,7 +30,7 @@ export const AssetGrid = ({
   const handleDeleteFolder = async (e: React.MouseEvent, folderName: string) => {
     e.stopPropagation();
     
-    const confirmDelete = window.confirm(`Are you sure you want to delete the folder "${folderName}"?`);
+    const confirmDelete = window.confirm(`${t.editor.modals.assetManager.assetGrid.deleteFolderConfirm} "${folderName}"?`);
     if (!confirmDelete) return;
 
     setIsDeleting(folderName);
@@ -47,16 +51,16 @@ export const AssetGrid = ({
 
       // בדיקה אם הקובץ באמת נמחק (סופהבייס לא תמיד זורק שגיאה אם הקובץ לא נמצא)
       if (data && data.length > 0) {
-        showToast(`Folder "${folderName}" deleted successfully`, "success");
+        showToast(`${folderName}: ${t.editor.modals.assetManager.assetGrid.deleteSuccess}`, "success");
         if (onRefresh) onRefresh();
       } else {
         // אם התיקייה קיימת אבל ה-.keep לא שם, אולי יש בה קובץ דמי אחר?
-        showToast("Folder structure is inconsistent, could not find .keep file", "error");
+        showToast(t.editor.modals.assetManager.assetGrid.deleteInconsistent, "error");
       }
 
     } catch (err: any) {
       console.error("Delete folder error:", err);
-      showToast(err.message || "Failed to delete folder", "error");
+      showToast(err.message || t.editor.modals.assetManager.assetGrid.deleteFailed, "error");
     } finally {
       setIsDeleting(null);
     }
@@ -66,7 +70,7 @@ export const AssetGrid = ({
     return (
       <div className="flex flex-col items-center justify-center h-64 opacity-40">
         <Loader2 className="animate-spin mb-4" size={32} />
-        <p className="text-xs font-black uppercase tracking-widest">Scanning Library...</p>
+        <p className="text-xs font-black uppercase tracking-widest">{t.editor.modals.assetManager.assetGrid.loading}</p>
       </div>
     );
   }
@@ -113,7 +117,7 @@ export const AssetGrid = ({
                         {asset.name}
                       </span>
                       <span className="text-[9px] font-bold text-brand-charcoal/30 uppercase mt-1">
-                        {asset.itemCount || 0} Items
+                        {asset.itemCount || 0} {t.editor.modals.assetManager.assetGrid.items}
                       </span>
                     </div>
                   </div>
@@ -135,7 +139,7 @@ export const AssetGrid = ({
                     <div className="bg-white p-4 pt-2 flex flex-col items-center">
                       <p className="text-[10px] font-black text-brand-dark truncate w-full text-center">{asset.name}</p>
                       <p className="text-[8px] font-bold text-brand-charcoal/30 uppercase mt-0.5">
-                        {inUse ? `${usage.length} Uses` : 'Available'}
+                        {inUse ? `${usage.length}: ${t.editor.modals.assetManager.assetGrid.uses}` : `${t.editor.modals.assetManager.assetGrid.available}`}
                       </p>
                     </div>
                   </>

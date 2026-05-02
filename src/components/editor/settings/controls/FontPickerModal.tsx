@@ -4,8 +4,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom'; // קריטי לפתרון הבעיה
 import { X, Search, Check, Loader2, Languages, Globe } from 'lucide-react';
 import { fetchGoogleFonts } from '@/services/googleFonts';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
+  
   const [mounted, setMounted] = useState(false);
   const [fonts, setFonts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +50,7 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
 
   const modalContent = (
     // z-index 1000 כאן ינצח את ה-z-40 של ה-aside כי הוא מרונדר ב-body
-    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[60px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[1000] bg-brand-dark/40 backdrop-blur-sm flex items-start justify-center pt-[60px] pb-10 px-4 md:px-8 overflow-hidden animate-in fade-in duration-300" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       
       <div className="bg-[#FDFDFD] w-full max-w-7xl h-full max-h-[calc(100vh-140px)] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/40 animate-in zoom-in-95 duration-300">
         
@@ -54,9 +59,9 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
           <div>
             <h2 className="text-2xl font-black text-brand-dark tracking-tighter flex items-center gap-2">
               <Languages className="text-brand-main" size={24} />
-              Typography Library
+              {t.editor.modals.fontPickerModal.title}
             </h2>
-            <p className="text-[11px] font-bold text-brand-charcoal/30 uppercase tracking-widest"></p>
+            <p className="text-[11px] font-bold text-brand-charcoal/50 uppercase tracking-widest">{t.editor.modals.fontPickerModal.subtitle}</p>
           </div>
           <div className="flex items-center gap-3">
              <div className="flex gap-2 bg-brand-grey p-1 rounded-xl mr-4 text-start">
@@ -64,13 +69,13 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
                   onClick={() => setActiveTab('hebrew')}
                   className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'hebrew' ? 'bg-brand-dark text-white shadow-md' : 'text-brand-charcoal/40 hover:text-brand-charcoal'}`}
                 >
-                  <Languages size={14} /> Hebrew
+                  <Languages size={14} /> {t.editor.modals.fontPickerModal.tabs.hebrew}
                 </button>
                 <button 
                   onClick={() => setActiveTab('all')}
                   className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'all' ? 'bg-brand-dark text-white shadow-md' : 'text-brand-charcoal/40 hover:text-brand-charcoal'}`}
                 >
-                  <Globe size={14} /> All Fonts
+                  <Globe size={14} /> {t.editor.modals.fontPickerModal.tabs.all}
                 </button>
              </div>
              <button onClick={onClose} className="p-2.5 bg-brand-grey hover:bg-red-50 hover:text-red-500 rounded-full transition-all">
@@ -82,10 +87,12 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
         {/* Toolbar - Search */}
         <div className="p-6 bg-[#F8F9FB] border-b border-brand-lavender/20 text-start">
           <div className="relative max-w-2xl mx-auto group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-charcoal/30 group-focus-within:text-brand-main transition-colors" size={20} />
-            <input 
+              <Search 
+              className={`absolute ${lang === 'he' ? 'right-5' : 'left-5'} top-1/2 -translate-y-1/2 text-brand-charcoal/30 group-focus-within:text-brand-main transition-colors`} 
+              size={20} />
+              <input 
               className="w-full bg-white border border-brand-lavender/30 shadow-sm focus:border-brand-main/30 rounded-2xl py-4 pl-14 pr-6 text-base font-bold outline-none transition-all"
-              placeholder="Search for a font name..."
+              placeholder={t.editor.modals.fontPickerModal.searchPlaceholder}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setDisplayCount(30); }}
             />
@@ -97,7 +104,7 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
           {loading ? (
             <div className="h-full flex flex-col items-center justify-center opacity-40">
               <Loader2 className="animate-spin mb-4 text-brand-main" size={48} />
-              <span className="text-sm font-black uppercase tracking-widest">Fetching Library...</span>
+              <span className="text-sm font-black uppercase tracking-widest">{t.editor.modals.fontPickerModal.loading}</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
@@ -119,7 +126,7 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
                           {font.category}
                         </span>
                         {font.subsets.includes('hebrew') && (
-                           <span className="px-2 py-0.5 bg-brand-main/5 text-brand-main text-[8px] font-black rounded-md uppercase">Hebrew</span>
+                           <span className="px-2 py-0.5 bg-brand-main/5 text-brand-main text-[8px] font-black rounded-md uppercase">{t.editor.modals.fontPickerModal.badges.hebrew}</span>
                         )}
                      </div>
                      <span className="text-3xl lg:text-4xl truncate py-2 leading-tight" style={{ fontFamily: font.family }}>
@@ -144,7 +151,7 @@ export const FontPickerModal = ({ isOpen, onClose, onSelect, selectedFont }: any
                 onClick={() => setDisplayCount(prev => prev + 30)}
                 className="px-12 py-4 bg-brand-dark text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-brand-main transition-all shadow-xl active:scale-95"
               >
-                Load More Typography
+                {t.editor.modals.fontPickerModal.loadMore}
               </button>
             </div>
           )}

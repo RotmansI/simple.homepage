@@ -7,8 +7,13 @@ import MenuManagementModal from '@/components/editor/settings/controls/MenuManag
 import { MenuLayoutGroup } from './settings/groups/MenuLayoutGroup';
 import { MenuColorsGroup } from './settings/groups/MenuColorsGroup';
 import { MenuItemDefaultImageGroup } from './settings/groups/MenuItemDefaultImageGroup';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
 export default function MenuSectionSettings(props: any) {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
+  
   const { site, updateSectionContent, section, setSite } = props; // הוספתי setSite ליתר ביטחון
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [availableMenus, setAvailableMenus] = useState<any[]>([]);
@@ -82,15 +87,22 @@ useEffect(() => {
     handleSettingsUpdate({ selectedMenuIds: newSelection });
   };
 
-  if (!section) return <div className="p-4 text-xs font-bold text-red-400 text-start">Settings missing section ref</div>;
+if (!section) return (
+    <div className={`p-4 text-xs font-bold text-red-400 ${lang === 'he' ? 'text-right' : 'text-left'}`}>
+      {t.editor.sidebar.sections.menu.errorMissing}
+    </div>
+  );
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+<div 
+      className={`space-y-6 animate-in fade-in duration-300 ${
+        lang === 'he' ? 'text-right slide-in-from-left-4' : 'text-left slide-in-from-right-4'
+      }`} dir={lang === 'he' ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="font-black text-brand-dark flex items-center gap-2 text-sm uppercase tracking-tighter text-start">
           <ListTree size={18} className="text-brand-main" />
-          Menu Selection
+          {t.editor.sidebar.sections.menu.title}
         </h3>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -103,12 +115,12 @@ useEffect(() => {
       {/* Menu Selection List */}
       <div className="space-y-2 text-start">
         <p className="text-[10px] font-black text-brand-charcoal/30 uppercase tracking-widest px-1">
-          {isLoading ? "Loading menus..." : "Display in this section:"}
+          {isLoading ? t.editor.sidebar.sections.menu.loading : t.editor.sidebar.sections.menu.displayLabel}
         </p>
 
         {availableMenus.length === 0 && !isLoading ? (
           <div className="p-4 border border-dashed border-brand-mint rounded-xl text-center">
-            <p className="text-xs font-bold text-brand-charcoal/40">No menus found for this site</p>
+            <p className="text-xs font-bold text-brand-charcoal/40">{t.editor.sidebar.sections.menu.noMenus}</p>
           </div>
         ) : (
           availableMenus.map((menu: any) => (
@@ -174,7 +186,7 @@ useEffect(() => {
         className="w-full py-2 bg-brand-main text-white rounded-4xl font-black flex items-center justify-center gap-2 hover:bg-brand-accent transition-all shadow-lg shadow-brand-dark/10 mt-4"
       >
         <ListTree size={18} />
-        Menu Manager Tool
+        {t.editor.sidebar.sections.menu.managerBtn}
       </button>
 
       {/* עדכון המודאל עם ה-Props החדשים */}

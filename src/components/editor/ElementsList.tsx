@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { 
-  ChevronRight, Trash2, GripVertical, Type as TypeIcon, 
+  ChevronRight, ChevronLeft, Trash2, GripVertical, Type as TypeIcon, 
   FileText, MousePointer, ImageIcon, Minus 
 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language, translations } from '@/lib/translations/index';
 
-// פונקציית עזר לאייקונים - מוגדרת כאן מקומית כדי למנוע שגיאות Build
 const getElementIcon = (type: string, size = 12) => {
   switch (type) {
     case 'heading':   return <TypeIcon size={size} />;
@@ -19,7 +20,6 @@ const getElementIcon = (type: string, size = 12) => {
   }
 };
 
-// תיקון עבור Next.js Strict Mode
 const StrictModeDroppable = ({ children, ...props }: any) => {
   const [enabled, setEnabled] = useState(false);
   useEffect(() => {
@@ -44,14 +44,14 @@ interface ElementsListProps {
 export const ElementsList = ({ 
   elements, selectedId, selectedFlexElementId, setSelectedFlexElementId, updateSectionContent 
 }: ElementsListProps) => {
+  const { lang } = useLanguage();
+  const t = translations[lang as Language];
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-
     const items = Array.from(elements);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
     updateSectionContent(selectedId, { elements: items });
   };
 
@@ -59,9 +59,17 @@ export const ElementsList = ({
     <DragDropContext onDragEnd={onDragEnd}>
       <StrictModeDroppable droppableId="elements">
         {(provided: any) => (
-          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+          <div 
+            {...provided.droppableProps} 
+            ref={provided.innerRef} 
+            className="space-y-2"
+            dir={lang === 'he' ? 'rtl' : 'ltr'}
+          >
             {elements.map((el, idx) => {
               const isSelected = selectedFlexElementId === el.id;
+              // שליפת שם האלמנט המתורגם
+              const translatedType = t.editor.sidebar.sections.elementTypes[el.type as keyof typeof t.editor.sidebar.sections.elementTypes] || el.type;
+
               return (
                 <Draggable key={el.id} draggableId={el.id} index={idx}>
                   {(provided, snapshot) => (
@@ -72,7 +80,7 @@ export const ElementsList = ({
                         ${isSelected ? 'border-brand-indigo ring-2 ring-brand-indigo/10' : 'border-brand-lavender hover:border-brand-indigo/50'} 
                         ${snapshot.isDragging ? 'shadow-xl scale-[1.02] border-brand-indigo z-50 bg-white' : ''}`}
                     >
-                      <div className="flex items-center gap-3 overflow-hidden text-start">
+                      <div className={`flex items-center gap-3 overflow-hidden ${lang === 'he' ? 'text-right' : 'text-left'}`}>
                         {/* ידית גרירה */}
                         <div {...provided.dragHandleProps} className="text-brand-slate/30 hover:text-brand-indigo cursor-grab active:cursor-grabbing p-1">
                           <GripVertical size={14} />
@@ -82,8 +90,10 @@ export const ElementsList = ({
                           {getElementIcon(el.type, 10)}
                         </div>
                         
-                        <div className="flex flex-col text-start overflow-hidden">
-                          <span className="text-[10px] font-black uppercase text-brand-midnight leading-none mb-0.5">{el.type}</span>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="text-[10px] font-black uppercase text-brand-midnight leading-none mb-0.5">
+                            {translatedType}
+                          </span>
                           {el.text && <span className="text-[8px] opacity-40 truncate max-w-[100px] italic leading-tight">"{el.text}"</span>}
                         </div>
                       </div>
@@ -93,7 +103,11 @@ export const ElementsList = ({
                           onClick={() => setSelectedFlexElementId(el.id)} 
                           className={`p-1.5 rounded-md transition-all ${isSelected ? 'bg-brand-indigo text-white' : 'text-brand-indigo hover:bg-brand-indigo/10'}`}
                         >
-                          <ChevronRight size={14} className={isSelected ? 'rotate-90' : ''}/>
+                          {lang === 'he' ? (
+                            <ChevronLeft size={14} className={isSelected ? '-rotate-90' : ''}/>
+                          ) : (
+                            <ChevronRight size={14} className={isSelected ? 'rotate-90' : ''}/>
+                          )}
                         </button>
                         <button 
                           onClick={() => updateSectionContent(selectedId, { elements: elements.filter((item: any) => item.id !== el.id) })} 
