@@ -2,10 +2,10 @@ import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import SiteRenderer from '@/components/sites/SiteRenderer';
 import SiteNavbar from '@/components/sites/SiteNavbar';
-import { ShieldCheck, FileText, Globe } from 'lucide-react';
-import { getGoogleFontsUrl } from '@/utils/fonts'; // ייבוא ה-Utility
+import { ShieldCheck, FileText, Globe, Eye } from 'lucide-react';
+import { getGoogleFontsUrl } from '@/utils/fonts';
 
-export default async function PublicSitePage({ 
+export default async function AuthenticatedDraftPage({ 
   params 
 }: { 
   params: Promise<{ slug: string; pageName: string }> 
@@ -21,26 +21,26 @@ export default async function PublicSitePage({
 
   if (orgError || !org) return notFound();
 
-// 2. חילוץ נתוני האתר המפורסמים בלבד
+  // 2. חילוץ נתוני האתר המלאים
   const { data: site, error: siteError } = await supabase
     .from('sites')
     .select('*')
     .eq('org_id', org.id)
     .single();
 
-  if (siteError || !site || !site.is_published) return notFound();
+  if (siteError || !site) return notFound();
 
-  // 🎯 שינוי קריטי: מושכים מהמידע המפורסם
-  const siteData = site.published_data || {}; 
-  const themeSettings = site.published_theme || site.theme_settings; // Fallback לתמה המקורית אם אין מפורסמת
-  
+  // 🎯 כאן ההבדל המרכזי: הנתונים נשלפים מהטיוטה (Draft) ומהתמה העדכנית באדיטור
+  const siteData = site.draft_data || {};
+  const themeSettings = site.theme_settings || {};
   const pages = siteData.pages || {};
   const currentPage = pages[pageName];
 
   if (!currentPage) return notFound();
-  const siteDirection = siteData.navbar?.direction || 'rtl';
 
-  // הכנת ה-URL של הפונטים מהתמה המפורסמת
+  const siteDirection = siteData.navbar?.direction || 'rtl';
+  
+  // הכנת ה-URL של הפונטים שנבחרו באדיטור
   const fontsUrl = getGoogleFontsUrl(
     themeSettings?.primary_font, 
     themeSettings?.secondary_font
@@ -51,7 +51,14 @@ export default async function PublicSitePage({
       dir={siteDirection} 
       className="min-h-screen flex flex-col relative"
     >
-      {/* הזרקת הפונטים ב-Head של הדף הציבורי למניעת Layout Shift */}
+      {/* אינדיקטור ויזואלי עדין בחלק העליון והתחתון שמבהיר שאנחנו במצב Preview */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-brand-main z-[200] animate-pulse" />
+      <div className="fixed bottom-12 left-4 z-[200] bg-brand-main text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase flex items-center gap-2 shadow-xl opacity-90 select-none">
+        <Eye size={12} />
+        <span>Draft Preview</span>
+      </div>
+
+      {/* הזרקת הפונטים מהאדיטור */}
       {fontsUrl && <link rel="stylesheet" href={fontsUrl} />}
 
       {/* שכבת הרקע הגלובלית של הדף */}
@@ -91,6 +98,7 @@ export default async function PublicSitePage({
             theme={themeSettings} 
             settings={siteData}
             orgName={org.name_he || org.name_en}
+            isDraft={true}
           />
         </header>
         
@@ -103,21 +111,15 @@ export default async function PublicSitePage({
         
         <footer className="h-[30px] border-t border-brand-lavender/30 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 z-20">
           <div className="flex items-center gap-2">
-            <Globe size={12} className="text-brand-indigo" />
+            <Globe size={12} className="text-brand-main" />
             <p className="text-[10px] font-bold text-brand-midnight/60">
-              Powered by <span className="text-brand-indigo uppercase tracking-wider">Simple. Homepage</span>
+              Draft Preview Mode <span className="text-brand-main uppercase tracking-wider">Simple. Homepage</span>
             </p>
           </div>
 
-          <div className="flex items-center gap-4 hidden md:flex">
-            <a href="#" className="flex items-center gap-1.5 text-brand-midnight/50 hover:text-brand-indigo transition-colors">
-              <FileText size={10} />
-              <span className="text-[9px] font-black uppercase tracking-tight">Terms</span>
-            </a>
-            <a href="#" className="flex items-center gap-1.5 text-brand-midnight/50 hover:text-brand-indigo transition-colors">
-              <ShieldCheck size={10} />
-              <span className="text-[9px] font-black uppercase tracking-tight">Privacy</span>
-            </a>
+          <div className="flex items-center gap-4 hidden md:flex opacity-40 pointer-events-none">
+            <span className="text-[9px] font-black uppercase tracking-tight">Terms</span>
+            <span className="text-[9px] font-black uppercase tracking-tight">Privacy</span>
           </div>
         </footer>
       </div>

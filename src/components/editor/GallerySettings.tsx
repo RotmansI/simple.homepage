@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
   ChevronLeft, ChevronRight, LayoutGrid, MoveVertical, Grid3X3, Maximize2, 
-  CheckCircle2, AlertCircle, Trash2, Plus, GripVertical, Palette, Box, Layers, MousePointer2
+  CheckCircle2, AlertCircle, Trash2, Plus, GripVertical, Palette, Box, Layers
 } from 'lucide-react';
 import { ElementEditor } from './ElementEditor';
 
@@ -13,7 +13,6 @@ import { SectionBackgroundGroup } from './settings/groups/SectionBackgroundGroup
 import { ContentManagerGroup } from './settings/groups/ContentManagerGroup';
 import { FrameGroup } from './settings/groups/FrameGroup';
 import { ShadowGroup } from './settings/groups/ShadowGroup';
-import { InteractionsGroup } from './settings/groups/InteractionsGroup';
 import { SettingsCollapse } from './settings/groups/SettingsCollapse';
 import { useLanguage } from '@/context/LanguageContext';
 import { Language, translations } from '@/lib/translations/index';
@@ -39,6 +38,8 @@ export const GallerySettings = ({
   const imageCount = gallerySettings.images?.length || 0;
   const isCarousel = gallerySettings.layout === 'carousel';
   const hasMinImages = imageCount >= 10;
+  
+  // מציאת האלמנט הנבחר בשרשרת
   const currentElement = content.elements?.find((e: any) => e.id === selectedFlexElementId);
 
   // פונקציות עזר לעדכון
@@ -47,44 +48,64 @@ export const GallerySettings = ({
 
   // פונקציית הוספת אלמנטים (כותרות/כפתורים מעל הגלריה)
   const addGalleryElement = (type: string) => {
+    const primaryColor = site?.theme_settings?.primary_color || '#000000';
+    
     const newEl: any = { 
       id: `${type}-${crypto.randomUUID()}`, 
       type, 
       text_align: 'center',
     };
-    if (type === 'heading') { newEl.text = t.editor.sidebar.sections.defaults.title; newEl.font_size = 36; }
-    else if (type === 'paragraph') { newEl.text = t.editor.sidebar.sections.defaults.description; newEl.font_size = 16; }
-    else if (type === 'button') { newEl.text = t.editor.sidebar.sections.defaults.button; newEl.font_size = 14; }
+
+    if (type === 'heading') { 
+        newEl.text = t.editor.sidebar.sections.defaults.title; 
+        newEl.font_size = 36; 
+        newEl.font_weight = '800';
+    }
+    else if (type === 'paragraph') { 
+        newEl.text = t.editor.sidebar.sections.defaults.description; 
+        newEl.font_size = 16; 
+    }
+    else if (type === 'button') { 
+        newEl.text = t.editor.sidebar.sections.defaults.button; 
+        newEl.font_size = 14; 
+        newEl.bg_color = primaryColor;
+    }
 
     updateContent({ elements: [...(content.elements || []), newEl] });
   };
 
-  // מצב עריכת אלמנט ספציפי
+  /**
+   * השרשרת: מצב עריכת אלמנט (Element Focus)
+   * אם נבחר אלמנט ספציפי, הסיידבר מחליף את פניו
+   */
   if (selectedFlexElementId && currentElement) {
     return (
-      <ElementEditor 
-        site={site} // העברת ה-site לאלמנט אדיטור
-        el={currentElement}
-        selectedId={selectedId}
-        updateFlexElement={updateFlexElement}
-        selectAssetForField={selectAssetForField}
-        onBack={() => setSelectedFlexElementId(null)}
-        selectedSection={selectedSection}
-      />
+      <div className="animate-in slide-in-from-left duration-300">
+        <ElementEditor 
+          site={site}
+          el={currentElement}
+          selectedId={selectedId}
+          updateFlexElement={updateFlexElement}
+          selectAssetForField={selectAssetForField}
+          onBack={() => setSelectedFlexElementId(null)}
+          selectedSection={selectedSection}
+        />
+      </div>
     );
   }
 
   const pageName = (pages && activePageKey && pages[activePageKey]?.name) || t.editor.sidebar.sections.page;
+  const allSectionsContent = site?.draft_data?.content || site?.content;
 
   return (
     <div 
-  className={`space-y-2 animate-in duration-300 pb-20 text-brand-midnight ${
-    lang === 'he' ? 'text-right slide-in-from-left-4' : 'text-left slide-in-from-right-4'
-  }`}
-  dir={lang === 'he' ? 'rtl' : 'ltr'}
->
+      className={`space-y-2 animate-in duration-300 pb-20 text-brand-midnight ${
+        lang === 'he' ? 'text-right slide-in-from-left-4' : 'text-left slide-in-from-right-4'
+      }`}
+      dir={lang === 'he' ? 'rtl' : 'ltr'}
+    >
       
-      {/* כפתור חזרה */}
+      {/* כפתור חזרה לעמוד */}
       <button 
         onClick={onBackToPage}
         className="flex items-center gap-2 px-1 py-1 text-brand-indigo hover:text-brand-indigo/70 transition-all group mb-4"
@@ -99,36 +120,52 @@ export const GallerySettings = ({
         </span>
       </button>
 
-      {/* 1. זהות ורקע הסקשן */}
+      {/* 1. זהות הסקשן */}
       <div className="mb-6">
-        <SectionBasicGroup content={selectedSection} updateContent={(updates) => updateSectionContent(selectedId, updates)} />
+        <SectionBasicGroup 
+          content={selectedSection} 
+          updateContent={(updates) => updateSectionContent(selectedId, updates)} 
+        />
       </div>
 
       <div className="flex flex-col">
         
         {/* הגדרות רקע הסקשן */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.background} icon={<Palette size={14}/>}>
+        <SettingsCollapse 
+          id={`${selectedId}-background`}
+          label={t.editor.sidebar.sections.groups.background} 
+          icon={<Palette size={14}/>}
+        >
             <SectionBackgroundGroup 
                 content={content} 
                 updateContent={updateContent} 
                 onOpenAssetManager={(callback) => selectAssetForField(selectedId, 'bg_image', undefined, callback)} 
                 site={site}
+                allSectionsContent={allSectionsContent}
             />
         </SettingsCollapse>
 
-        {/* ניהול אלמנטים מעל הגלריה (המאוחד) */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.galleryContent} icon={<GripVertical size={14}/>}>
+        {/* ניהול אלמנטים מעל הגלריה (כותרות, פסקאות, כפתורים) */}
+        <SettingsCollapse 
+          id={`${selectedId}-content`}
+          label={t.editor.sidebar.sections.groups.galleryContent} 
+          icon={<GripVertical size={14}/>}
+        >
           <ContentManagerGroup 
             content={content} 
             updateContent={updateContent} 
             onAddElement={addGalleryElement}
-            onEditElement={setSelectedFlexElementId} 
+            onEditElement={(id) => setSelectedFlexElementId(id)} 
             onRemoveElement={(id) => updateContent({ elements: content.elements.filter((e: any) => e.id !== id) })} 
           />
         </SettingsCollapse>
 
-        {/* עיצוב מבנה הגלריה */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.galleryDesigner} icon={<Grid3X3 size={14}/>} defaultOpen={true}>
+        {/* עיצוב מבנה הגלריה (Layout & Scale) */}
+        <SettingsCollapse 
+          id={`${selectedId}-designer`}
+          label={t.editor.sidebar.sections.groups.galleryDesigner} 
+          icon={<Grid3X3 size={14}/>}
+        >
           <div className="space-y-6 pt-2">
             {/* בחירת Layout */}
             <div className="grid grid-cols-3 gap-2">
@@ -148,7 +185,7 @@ export const GallerySettings = ({
               ))}
             </div>
 
-            {/* חיווי קרוסלה */}
+            {/* חיווי סטטוס קרוסלה */}
             {isCarousel && (
               <div className={`p-4 rounded-2xl border-2 transition-all ${hasMinImages ? 'bg-brand-mint/10 border-brand-mint/30 text-brand-mint' : 'bg-brand-coral/5 border-brand-coral/30 text-brand-coral'}`}>
                 <div className="flex items-start gap-3">
@@ -172,18 +209,27 @@ export const GallerySettings = ({
                 </div>
                 <span className="text-[10px] font-mono font-bold text-brand-indigo">x{gallerySettings.component_scale ?? 1}</span>
               </div>
-              <input type="range" min="0.4" max="1.2" step="0.05" className="w-full accent-brand-indigo h-1.5 cursor-pointer appearance-none bg-brand-lavender rounded-lg" value={gallerySettings.component_scale ?? 1} onChange={(e) => updateGallery({ component_scale: parseFloat(e.target.value) })} />
+              <input 
+                type="range" min="0.4" max="1.2" step="0.05" 
+                className="w-full accent-brand-indigo h-1.5 cursor-pointer appearance-none bg-brand-lavender rounded-lg" 
+                value={gallerySettings.component_scale ?? 1} 
+                onChange={(e) => updateGallery({ component_scale: parseFloat(e.target.value) })} 
+              />
             </div>
           </div>
         </SettingsCollapse>
 
-        {/* ניהול Assets (תמונות הגלריה) */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.galleryImages} icon={<Box size={14}/>} defaultOpen={true}>
+        {/* ניהול תמונות הגלריה */}
+        <SettingsCollapse 
+          id={`${selectedId}-images`}
+          label={t.editor.sidebar.sections.groups.galleryImages} 
+          icon={<Box size={14}/>}
+        >
           <div className="space-y-4 pt-2">
             <div className="grid grid-cols-4 gap-2">
               {gallerySettings.images?.map((img: string, idx: number) => (
                 <div key={idx} className="relative aspect-square rounded-xl border border-brand-lavender overflow-hidden group bg-brand-pearl shadow-sm">
-                   <img src={img} className="w-full h-full object-cover" />
+                   <img src={img} className="w-full h-full object-cover" alt="" />
                    <button 
                     onClick={() => {
                         const newImgs = [...gallerySettings.images];
@@ -212,18 +258,27 @@ export const GallerySettings = ({
           </div>
         </SettingsCollapse>
 
-        {/* עיצובים נוספים (Frames, Shadows, Hover) */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.frames} icon={<Layers size={14}/>}>
+        {/* מסגרות (Frames) */}
+        <SettingsCollapse 
+          id={`${selectedId}-frames`}
+          label={t.editor.sidebar.sections.groups.frames} 
+          icon={<Layers size={14}/>}
+        >
             <FrameGroup 
-              site={site} // העברת ה-site לצבעי מותג בבורדר
+              site={site} 
               content={gallerySettings} 
               updateContent={updateGallery} 
             />
         </SettingsCollapse>
 
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.shadows} icon={<Layers size={14}/>}>
+        {/* צללים (Shadows) */}
+        <SettingsCollapse 
+          id={`${selectedId}-shadows`}
+          label={t.editor.sidebar.sections.groups.shadows} 
+          icon={<Layers size={14}/>}
+        >
             <ShadowGroup 
-              site={site} // העברת ה-site לצבעי מותג בצל
+              site={site} 
               content={gallerySettings} 
               updateContent={updateGallery} 
             />

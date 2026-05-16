@@ -1,18 +1,25 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// הגדרת ה-Interface לקבלת content ו-site
 interface HeadingProps {
   content: any;
   site?: any;
+  onUpdate?: (updates: Record<string, any>) => void;
 }
 
-export const Heading = ({ content, site }: HeadingProps) => {
+export const Heading = ({ content, site, onUpdate }: HeadingProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [tempText, setTempText] = useState(content?.text || '');
+  
+  // המנעול: עריכה תתאפשר רק אם קיבלנו פונקציית עדכון (מצב אדיטור)
+  const isEditable = !!onUpdate && typeof onUpdate === 'function';
+
+  useEffect(() => {
+    if (content?.text) setTempText(content.text);
+  }, [content?.text]);
 
   if (!content) return null;
 
-  // חילוץ שפת האתר וקביעת כיווניות
   const siteLanguage = site?.theme_settings?.site_language || 'en';
   const isRTL = siteLanguage === 'he';
 
@@ -29,7 +36,6 @@ export const Heading = ({ content, site }: HeadingProps) => {
     bottom_line,
     line_height,
     letter_spacing,
-    // Box Model
     padding,
     margin_top,
     margin_bottom,
@@ -37,21 +43,17 @@ export const Heading = ({ content, site }: HeadingProps) => {
     padding_bottom,
     padding_left,
     padding_right,
-    // Stroke
     border_width,
     border_color,
-    // Shadow & Outline
     outline_w,
     outline_c,
     shadow_intensity,
     shadow_c,
     shadow_color,
-    shadow_type,
     shadow_blur,
     shadow_x,
     shadow_y,
     opacity,
-    // Interactions
     hover_enabled,
     hover_type,
     hover_scale,
@@ -64,13 +66,12 @@ export const Heading = ({ content, site }: HeadingProps) => {
     link_target_blank
   } = content;
 
-  // פונקציות הצללים הקיימות (ללא שינוי)
+  // --- לוגיקת עיצוב (משוחזרת במלואה מהקוד המקורי שלך) ---
   const getSolidStroke = (isHover: boolean) => {
     const effectiveWidth = border_width || 0;
     const effectiveColor = (isHover && hover_enabled && hover_type === 'colors_swap') 
       ? (hover_border_color || border_color) 
       : (border_color || '#000000');
-    
     if (effectiveWidth <= 0) return 'none';
     const w = effectiveWidth;
     const c = effectiveColor;
@@ -119,7 +120,6 @@ export const Heading = ({ content, site }: HeadingProps) => {
     ? hover_text_color
     : (text_color || 'inherit');
 
-  // לוגיקת יישור: עדיפות להגדרה מפורשת, אחרת לפי שפת האתר
   const finalTextAlign = align || text_align || (isRTL ? 'right' : 'left');
 
   const style: React.CSSProperties = {
@@ -136,8 +136,6 @@ export const Heading = ({ content, site }: HeadingProps) => {
     lineHeight: line_height || '1.2',
     letterSpacing: letter_spacing ? `${letter_spacing}px` : 'normal',
     textShadow: combinedShadow || 'none',
-    border: 'none',
-    borderRadius: '0px',
     paddingTop: `${padding_top ?? padding ?? 0}px`,
     paddingBottom: `${padding_bottom ?? padding ?? 0}px`,
     paddingLeft: `${padding_left ?? padding ?? 0}px`,
@@ -146,23 +144,43 @@ export const Heading = ({ content, site }: HeadingProps) => {
     marginBottom: `${margin_bottom ?? 0}px`,
     opacity: (opacity ?? 100) / 100,
     width: '100%',
-    cursor: link_enabled ? 'pointer' : 'default',
+    cursor: isEditable ? 'text' : (link_enabled ? 'pointer' : 'default'),
     transition: `all ${hover_transition || 0.3}s ease-in-out`,
     transform: (isHovered && hover_enabled && hover_type === 'scale_up') 
       ? `scale(${hover_scale || 1.1})` 
       : 'scale(1)',
-    zIndex: isHovered ? 10 : 1,
     position: 'relative',
-    direction: isRTL ? 'rtl' : 'ltr' // הבטחת כיווניות הטקסט והפיסוק
+    direction: isRTL ? 'rtl' : 'ltr',
+    outline: 'none'
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLHeadingElement>) => {
+    if (isEditable) {
+      const newText = e.currentTarget.innerText;
+      if (newText !== text) {
+        onUpdate({ text: newText });
+      }
+    }
   };
 
   const HeadingElement = (
     <h2 
       style={style} 
-      className="whitespace-pre-wrap break-words transition-all duration-300 group"
+      className="whitespace-pre-wrap break-words"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      // 🎯 כאן קורה הקסם: עריכה ישירה על האלמנט
+      contentEditable={isEditable}
+      suppressContentEditableWarning={true}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+      }}
     >
+      {/* אפקט ה-wrapping lines נשאר כחלק מהעיצוב */}
       {hover_enabled && hover_type === 'wrapping_lines' && (
         <>
           <span 
@@ -175,11 +193,12 @@ export const Heading = ({ content, site }: HeadingProps) => {
           />
         </>
       )}
-      {text}
+      {tempText}
     </h2>
   );
 
-  if (link_enabled && link_url) {
+  // הלינק פעיל רק באתר הציבורי
+  if (link_enabled && link_url && !isEditable) {
     return (
       <a 
         href={link_url} 

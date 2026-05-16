@@ -7,7 +7,7 @@ import {
   Phone, ImageIcon, Trash2, Plus, Type, Bold, Italic, 
   Palette, MousePointer2, Info, MapPin, MessageCircle, Navigation,
   Paintbrush, ChevronDown, ChevronUp, MessageSquare, AlignRight, AlignLeft,
-  ExternalLink, Calendar, ShoppingBag
+  ExternalLink, Calendar, ShoppingBag, Star
 } from 'lucide-react';
 import { FaInstagram, FaFacebook, FaWhatsapp, FaWaze } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
@@ -19,7 +19,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
   const navData = site?.draft_data?.navbar || {};
   const [openSection, setOpenSection] = useState<string | null>('brand');
   
-  // State עבור ה-SmartColorPicker החדש
+  // State עבור ה-SmartColorPicker
   const [activeColorKey, setActiveColorKey] = useState('bg_color');
 
   const brandColors = [
@@ -29,12 +29,22 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
     '#FFFFFF'
   ];
 
-  // רשימת הגדרות הצבע לעריכה
+  // 🎯 רשימת הגדרות הצבע - כולל כפתורי הפעולה החדשים
   const colorSettings = [
-{ key: 'bg_color', label: t.editor.structure.navbarPanel.theme.colorLabels.bg_color, value: navData.bg_color || '#000000' },
+    { key: 'bg_color', label: t.editor.structure.navbarPanel.theme.colorLabels.bg_color, value: navData.bg_color || '#000000' },
     { key: 'link_color', label: t.editor.structure.navbarPanel.theme.colorLabels.link_color, value: navData.link_color || '#ffffff' },
     { key: 'link_hover_color', label: t.editor.structure.navbarPanel.theme.colorLabels.link_hover_color, value: navData.link_hover_color || '#41dcfb' },
     { key: 'link_active_color', label: t.editor.structure.navbarPanel.theme.colorLabels.link_active_color, value: navData.link_active_color || '#21e1b4' },
+    { 
+        key: 'action_btn_bg', 
+        label: lang === 'he' ? 'רקע כפתורי פעולה' : 'Action Buttons Bg', 
+        value: navData.action_btn_bg || site?.theme_settings?.primary_color || '#0B4440' 
+    },
+    { 
+        key: 'action_btn_text', 
+        label: lang === 'he' ? 'טקסט כפתורי פעולה' : 'Action Buttons Text', 
+        value: navData.action_btn_text || '#ffffff' 
+    },
   ];
 
   const currentActiveColor = colorSettings.find(c => c.key === activeColorKey);
@@ -64,7 +74,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
   };
 
   return (
-    <div className="p-4 space-y-3 text-start animate-in fade-in duration-300 custom-scrollbar overflow-y-auto max-h-screen pb-24">
+    <div className="p-4 space-y-3 text-start animate-in fade-in duration-300 h-full pb-32">
       
       {/* 1. HEADER TITLE */}
       <div className="px-1 py-2 mb-2 " dir={lang === 'he' ? 'rtl' : 'ltr'}>
@@ -125,10 +135,6 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                 <button onClick={() => selectAssetForField(undefined, 'brand_image')} className="w-full py-3 bg-brand-indigo text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2 shadow-sm hover:bg-brand-indigo/90 transition-all">
                   <Plus size={14}/> {navData.brand_image ? t.editor.structure.navbarPanel.brand.changeLogo : t.editor.structure.navbarPanel.brand.selectLogo}
                 </button>
-                <div className="flex items-start gap-2 p-3 bg-brand-pearl rounded-xl border border-brand-lavender/50 text-[10px] text-brand-charcoal/60 leading-tight">
-                  <Info size={14} className="text-brand-indigo shrink-0" />
-                  <p><strong>{t.editor.structure.navbarPanel.brand.recommended}</strong>{t.editor.structure.navbarPanel.brand.logoNote}</p>
-                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -163,12 +169,6 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                       <input type="color" className="w-full h-6 rounded cursor-pointer border-none bg-transparent" value={navData.text_color || '#1A1A1A'} onChange={(e) => updateNavbar({ text_color: e.target.value })} />
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">{t.editor.structure.navbarPanel.brand.typographyLabel}</span>
-                    <select className="w-full bg-white p-3 rounded-xl text-[10px] font-bold border border-brand-lavender outline-none focus:border-brand-indigo shadow-sm" value={navData.text_font || ''} onChange={(e) => updateNavbar({ text_font: e.target.value })}>
-                      {fontOptions.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
-                    </select>
-                  </div>
                 </div>
               </div>
             )}
@@ -176,76 +176,72 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
         )}
       </div>
 
-{/* 3. NAVIGATION THEME SECTION */}
-<div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm" dir={lang === 'he' ? 'rtl' : 'ltr'}>
-  <button 
-    onClick={() => toggleSection('theme')}
-    className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/50 transition-all"
-  >
-    <div className="flex items-center gap-2">
-      <Paintbrush size={14} className="text-brand-main" />
-      <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">{t.editor.structure.navbarPanel.sections.theme}</span>
-    </div>
-    {openSection === 'theme' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-  </button>
+      {/* 3. NAVIGATION THEME SECTION */}
+      <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+        <button 
+          onClick={() => toggleSection('theme')}
+          className="w-full flex items-center justify-between p-4 bg-brand-pearl/20 hover:bg-brand-pearl/50 transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <Paintbrush size={14} className="text-brand-main" />
+            <span className="text-[10px] font-black uppercase text-brand-charcoal tracking-widest">{t.editor.structure.navbarPanel.sections.theme}</span>
+          </div>
+          {openSection === 'theme' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
 
-  {openSection === 'theme' && (
-    <div className="p-4 space-y-5 animate-in slide-in-from-top-2">
-      
-      {/* Smart Selector & Internal SmartColorPicker Component */}
-      <div className="space-y-4 p-4 bg-brand-pearl/30 rounded-2xl border border-brand-lavender/30">
-        <div className="space-y-1">
-          <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">{t.editor.structure.navbarPanel.theme.selectElement}</span>
-          <select 
-            className="w-full bg-white p-3 rounded-xl text-[10px] font-bold border border-brand-lavender outline-none focus:border-brand-indigo shadow-sm transition-all"
-            value={activeColorKey}
-            onChange={(e) => setActiveColorKey(e.target.value)}
-          >
-            {colorSettings.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-          </select>
-        </div>
+        {openSection === 'theme' && (
+          <div className="p-4 space-y-5 animate-in slide-in-from-top-2">
+            <div className="space-y-4 p-4 bg-brand-pearl/30 rounded-2xl border border-brand-lavender/30">
+              <div className="space-y-1">
+                <span className="text-[8px] font-black opacity-40 uppercase ml-1 block">{t.editor.structure.navbarPanel.theme.selectElement}</span>
+                <select 
+                  className="w-full bg-white p-3 rounded-xl text-[10px] font-bold border border-brand-lavender outline-none focus:border-brand-indigo shadow-sm transition-all"
+                  value={activeColorKey}
+                  onChange={(e) => setActiveColorKey(e.target.value)}
+                >
+                  {colorSettings.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
+              </div>
 
-        {/* הקומפוננטה המקורית שלך - מחליפה את האינפוט הישן */}
-        <SmartColorPicker 
-          label={`Color for: ${colorSettings.find(c => c.key === activeColorKey)?.label}`}
-          value={navData[activeColorKey] || (activeColorKey === 'bg_color' ? '#000000' : '#ffffff')}
-          onChange={(val: string) => updateNavbar({ [activeColorKey]: val })}
-          site={site}
-        />
+              <SmartColorPicker 
+                label={`Color for: ${colorSettings.find(c => c.key === activeColorKey)?.label}`}
+                value={navData[activeColorKey] || (activeColorKey === 'bg_color' ? '#000000' : '#ffffff')}
+                onChange={(val: string) => updateNavbar({ [activeColorKey]: val })}
+                site={site}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">{t.editor.structure.navbarPanel.theme.colorLegend}</span>
+              <div className="grid grid-cols-1 gap-1.5">
+                {colorSettings.map((c) => {
+                  const currentValue = navData[c.key] || c.value;
+                  return (
+                    <button 
+                      key={c.key}
+                      onClick={() => setActiveColorKey(c.key)}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${activeColorKey === c.key ? 'bg-brand-indigo/5 border-brand-indigo/30 ring-1 ring-brand-indigo/10' : 'bg-white border-brand-lavender hover:bg-brand-pearl/50'}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-4 h-4 rounded-full border border-black/5 shadow-sm transition-transform duration-300" 
+                          style={{ backgroundColor: currentValue }} 
+                        />
+                        <span className={`text-[9px] font-bold ${activeColorKey === c.key ? 'text-brand-indigo' : 'text-brand-charcoal'}`}>
+                          {c.label}
+                        </span>
+                      </div>
+                      <span className="text-[8px] font-mono opacity-40 uppercase">{currentValue}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Color Legend - מאפשר מעבר מהיר בלחיצה על השורה */}
-      <div className="space-y-2">
-        <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">{t.editor.structure.navbarPanel.theme.colorLegend}</span>
-        <div className="grid grid-cols-1 gap-1.5">
-          {colorSettings.map((c) => {
-            const currentValue = navData[c.key] || (c.key === 'bg_color' ? '#000000' : '#ffffff');
-            return (
-              <button 
-                key={c.key}
-                onClick={() => setActiveColorKey(c.key)}
-                className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${activeColorKey === c.key ? 'bg-brand-indigo/5 border-brand-indigo/30 ring-1 ring-brand-indigo/10' : 'bg-white border-brand-lavender hover:bg-brand-pearl/50'}`}
-              >
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-4 h-4 rounded-full border border-black/5 shadow-sm transition-transform duration-300" 
-                    style={{ backgroundColor: currentValue }} 
-                  />
-                  <span className={`text-[9px] font-bold ${activeColorKey === c.key ? 'text-brand-indigo' : 'text-brand-charcoal'}`}>
-                    {c.label}
-                  </span>
-                </div>
-                <span className="text-[8px] font-mono opacity-40 uppercase">{currentValue}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  )}
-</div>
-
-      {/* 4. ACTION BUTTONS SECTION (NEW) */}
+      {/* 4. ACTION BUTTONS SECTION */}
       <div className="border border-brand-lavender/50 rounded-2xl overflow-hidden bg-white shadow-sm" dir={lang === 'he' ? 'rtl' : 'ltr'}>
         <button 
           onClick={() => toggleSection('actions')}
@@ -261,6 +257,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
         {openSection === 'actions' && (
           <div className="p-4 space-y-4 animate-in slide-in-from-top-2">
             <div className="space-y-3">
+              {/* Booking */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2 ml-1">
                   <Calendar size={12} className="text-brand-indigo" />
@@ -275,6 +272,7 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                 />
               </div>
 
+              {/* Delivery */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2 ml-1">
                   <ShoppingBag size={12} className="text-brand-indigo" />
@@ -287,6 +285,43 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                   value={navData.delivery_url || ''}
                   onChange={(e) => updateNavbar({ delivery_url: e.target.value })}
                 />
+              </div>
+
+              {/* 🎯 Club Member Section */}
+              <div className="pt-4 mt-2 border-t border-brand-lavender/30 space-y-3">
+                <div className="flex items-center gap-2 ml-1">
+                  <Star size={12} className="text-brand-main" />
+                  <span className="text-[10px] font-black text-brand-dark uppercase tracking-tight">
+                    {lang === 'he' ? 'חבר מועדון' : 'Club Member'}
+                  </span>
+                </div>
+
+                {/* Club Text */}
+                <div className="space-y-1">
+                    <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">
+                        {lang === 'he' ? 'טקסט הכפתור' : 'Button Text'}
+                    </span>
+                    <input 
+                        className="w-full bg-white p-3 rounded-xl text-[10px] font-medium border border-brand-lavender outline-none focus:border-brand-main shadow-sm"
+                        value={navData.club_text || ''}
+                        placeholder={lang === 'he' ? 'חבר מועדון' : 'Club Member'}
+                        onChange={(e) => updateNavbar({ club_text: e.target.value })}
+                    />
+                </div>
+
+                {/* Club URL */}
+                <div className="space-y-1">
+                    <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">
+                        {lang === 'he' ? 'קישור להרשמה / מועדון' : 'Club / Signup URL'}
+                    </span>
+                    <input 
+                        className="w-full bg-white p-3 rounded-xl text-[10px] font-medium border border-brand-lavender outline-none focus:border-brand-main shadow-sm"
+                        dir='ltr'
+                        placeholder="https://..."
+                        value={navData.club_url || ''}
+                        onChange={(e) => updateNavbar({ club_url: e.target.value })}
+                    />
+                </div>
               </div>
             </div>
             
@@ -342,10 +377,6 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                   <div className="space-y-1">
                     <span className="text-[8px] font-black opacity-30 uppercase ml-1 block">{t.editor.structure.navbarPanel.contact.whatsappLabel}</span>
                     <input className="w-full bg-white p-3 rounded-xl text-[10px] font-mono border border-[#25D366]/30 shadow-inner outline-none focus:border-[#25D366]" dir='ltr' placeholder="972XXXXXXXXX" value={navData.whatsapp_phone || ''} onChange={(e) => updateNavbar({ whatsapp_phone: e.target.value })} />
-                    <div className="flex items-start gap-2 p-3 bg-brand-pearl rounded-xl border border-brand-lavender/50 text-[10px] text-brand-charcoal/60 leading-tight">
-                      <Info size={14} className="text-brand-indigo shrink-0" />
-                      <p>{t.editor.structure.navbarPanel.contact.whatsappNote}</p>
-                    </div>
                   </div>
 
                   <div className="pt-2 border-t border-brand-lavender/50 space-y-3">
@@ -358,26 +389,6 @@ export const NavbarPanel = ({ site, updateNavbar, selectAssetForField }: any) =>
                         <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${navData.whatsapp_floating ? 'right-0.5' : 'left-0.5'}`} />
                       </button>
                     </div>
-
-                    {navData.whatsapp_floating && (
-                      <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-brand-lavender shadow-sm animate-in zoom-in-95">
-                        <span className="text-[9px] font-black uppercase opacity-40 ml-1">{t.editor.structure.navbarPanel.contact.iconPosition}</span>
-                        <div className="flex bg-brand-pearl p-1 rounded-lg">
-                           <button 
-                            onClick={() => updateNavbar({ whatsapp_float_pos: 'left' })}
-                            className={`p-2 rounded-md transition-all ${navData.whatsapp_float_pos === 'left' ? 'bg-white text-brand-main shadow-sm' : 'text-brand-charcoal/30 hover:bg-white/50'}`}
-                           >
-                            <AlignLeft size={14} />
-                           </button>
-                           <button 
-                            onClick={() => updateNavbar({ whatsapp_float_pos: 'right' })}
-                            className={`p-2 rounded-md transition-all ${navData.whatsapp_float_pos !== 'left' ? 'bg-white text-brand-main shadow-sm' : 'text-brand-charcoal/30 hover:bg-white/50'}`}
-                           >
-                            <AlignRight size={14} />
-                           </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}

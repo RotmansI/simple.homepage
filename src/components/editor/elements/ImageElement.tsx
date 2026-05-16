@@ -2,35 +2,36 @@
 import React, { useState } from 'react';
 import { ImageIcon } from 'lucide-react';
 
-// הגדרת ה-Interface לקבלת content ו-site
 interface ImageElementProps {
   content: any;
   site?: any;
+  onUpdate?: (updates: any) => void;
 }
 
-export const ImageElement = ({ content, site }: ImageElementProps) => {
+export const ImageElement = ({ content, site, onUpdate }: ImageElementProps) => {
   const [isHovered, setIsHovered] = useState(false);
+
+  // המנעול: מצב עריכה פעיל רק אם יש פונקציית עדכון
+  const isEditable = !!onUpdate && typeof onUpdate === 'function';
 
   if (!content) return null;
 
-  // חילוץ שפת האתר וקביעת כיווניות
+  // אם אין תמונה ואנחנו באתר החי - פשוט לא מרנדרים כלום
+  if (!content.url && !isEditable) return null;
+
   const siteLanguage = site?.theme_settings?.site_language || 'en';
   const isRTL = siteLanguage === 'he';
 
   const {
     url,
     width,
-    // Box Model
     padding, padding_top, padding_bottom, padding_left, padding_right,
     margin_top, margin_bottom,
-    // Frame & Border
     border_width, border_color, border_style, border_radius,
-    // Shadow
     shadow_intensity, shadow_color, shadow_c,
     shadow_blur, shadow_x, shadow_y,
     opacity,
     text_align,
-    // Interactions
     hover_enabled,
     hover_type,
     hover_scale,
@@ -45,11 +46,15 @@ export const ImageElement = ({ content, site }: ImageElementProps) => {
     link_target_blank
   } = content;
 
-  // פתרון היישור (Alignment) - אם לא הוגדר מפורשת, מתחשב בשפת האתר
   const finalAlign = text_align || (isRTL ? 'right' : 'left');
   const alignmentClass = finalAlign === 'center' ? 'justify-center' : finalAlign === 'right' ? 'justify-end' : 'justify-start';
 
-  // חישוב צל (תומך ב-Intensity ובערכים חופשיים)
+  // 🎯 התיקון הקריטי: וידוא יחידות מידה (px) לרוחב התמונה
+  const finalWidth = width 
+    ? (width.toString().includes('%') || width.toString().includes('px') ? width : `${width}px`)
+    : '200px';
+
+  // לוגיקת הצללים
   const getShadow = () => {
     const c = shadow_color || shadow_c || 'rgba(0,0,0,0.15)';
     if (shadow_intensity && shadow_intensity > 0) {
@@ -66,9 +71,8 @@ export const ImageElement = ({ content, site }: ImageElementProps) => {
     return 'none';
   };
 
-  // עיצוב הקונטיינר החיצוני
   const containerStyle: React.CSSProperties = {
-    width: width ? (typeof width === 'number' ? `${width}px` : width) : '200px',
+    width: finalWidth, // שימוש ברוחב המעובד
     maxWidth: '100%',
     marginTop: `${margin_top || 0}px`,
     marginBottom: `${margin_bottom || 0}px`,
@@ -87,10 +91,10 @@ export const ImageElement = ({ content, site }: ImageElementProps) => {
       ? `0 0 20px 2px ${hover_glow_color || '#6366f1'}` 
       : getShadow(),
     borderRadius: `${border_radius ?? 0}px`,
-    direction: isRTL ? 'rtl' : 'ltr'
+    direction: isRTL ? 'rtl' : 'ltr',
+    cursor: isEditable ? 'pointer' : (link_enabled ? 'pointer' : 'default')
   };
 
-  // עיצוב המעטפת הפנימית
   const innerWrapperStyle: React.CSSProperties = {
     position: 'relative',
     width: '100%',
@@ -111,55 +115,40 @@ export const ImageElement = ({ content, site }: ImageElementProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={containerStyle}
-      className="cursor-pointer transition-all"
+      className="group/img transition-all"
     >
       <div style={innerWrapperStyle}>
         {url ? (
           <div className="relative w-full h-full flex items-center justify-center">
-            {/* תמונה ראשית */}
             <img 
-              src={url} 
+              src={(isHovered && hover_enabled && hover_type === 'image_swap' && hover_image_url) ? hover_image_url : url} 
               alt="" 
               style={{
                 transform: (isHovered && hover_enabled && hover_type === 'zoom_in') ? `scale(${hover_zoom || 1.2})` : 'scale(1)',
-                opacity: (isHovered && hover_enabled && hover_type === 'image_swap' && hover_swap_mode === 'fade' && hover_image_url) ? 0 : 1,
                 transition: `all ${hover_transition || 0.7}s ease-in-out`
               }}
               className="w-full h-auto block object-cover" 
             />
-            
-            {/* תמונת Swap */}
-            {hover_enabled && hover_type === 'image_swap' && hover_image_url && (
-              <img 
-                src={hover_image_url}
-                alt=""
-                style={{
-                  opacity: isHovered ? 1 : 0,
-                  transform: hover_swap_mode === 'slide' ? (isHovered ? 'translateY(0)' : 'translateY(100%)') : 'none',
-                  transition: `all ${hover_transition || 0.5}s ease-in-out`
-                }}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            )}
           </div>
         ) : (
-          /* פלייסהולדר */
-          <div className="w-full py-8 bg-white/5 backdrop-blur-[4px] border border-white/10 flex flex-col items-center justify-center gap-2 group">
-            <div className="p-2.5 rounded-full bg-white/5 text-white/20 group-hover:text-white/40 transition-colors">
-              <ImageIcon size={16} strokeWidth={2} />
+          isEditable && (
+            <div className="w-full py-8 bg-white/5 backdrop-blur-[4px] border border-white/10 flex flex-col items-center justify-center gap-2 group">
+              <div className="p-2.5 rounded-full bg-white/5 text-white/20 group-hover:text-white/40 transition-colors">
+                <ImageIcon size={16} strokeWidth={2} />
+              </div>
+              <span className="text-[7px] font-black uppercase tracking-[0.25em] text-white/30">
+                {isRTL ? 'מדיה ריקה' : 'Empty Media'}
+              </span>
             </div>
-            <span className="text-[7px] font-black uppercase tracking-[0.25em] text-white/30">
-              {isRTL ? 'מדיה ריקה' : 'Empty Media'}
-            </span>
-          </div>
+          )
         )}
       </div>
     </div>
   );
 
-  return (
-    <div className={`w-full flex ${alignmentClass}`}>
-      {link_enabled && link_url ? (
+  if (link_enabled && link_url && !isEditable) {
+    return (
+      <div className={`w-full flex ${alignmentClass}`}>
         <a 
           href={link_url} 
           target={link_target_blank ? "_blank" : "_self"} 
@@ -168,9 +157,13 @@ export const ImageElement = ({ content, site }: ImageElementProps) => {
         >
           {imageMarkup}
         </a>
-      ) : (
-        imageMarkup
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`w-full flex ${alignmentClass}`}>
+      {imageMarkup}
     </div>
   );
 };

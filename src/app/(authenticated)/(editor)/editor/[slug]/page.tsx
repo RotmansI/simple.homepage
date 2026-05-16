@@ -6,8 +6,9 @@ import { supabase } from '@/lib/supabase';
 import { Language, translations } from '@/lib/translations';
 import { 
   Loader2, Save, Eye, Monitor, Smartphone, ChevronRight, X, Box, Layout, Minus, Image as ImageIcon, UtensilsCrossed, 
-  ChevronLeft, Maximize2, Minimize2
+  ChevronLeft, Maximize2, Minimize2, Undo2, CloudUpload, Redo2, ExternalLink, History
 } from 'lucide-react';
+import Toast, { ToastType } from '@/components/ui/Toast';
 
 import HeroSection from '@/components/editor/sections/HeroSection';
 import TextSection from '@/components/editor/sections/TextSection';
@@ -24,6 +25,7 @@ import { getGoogleFontsUrl } from '@/utils/fonts'; // וודא שהנתיב תו
 import { EditorCanvas } from '@/components/editor/canvas/EditorCanvas';
 import AddSectionModal from '@/components/editor/settings/controls/AddSectionModal';
 import { useLanguage } from '@/context/LanguageContext';
+import PublishHistoryModal from '@/components/editor/settings/controls/PublishHistoryModal';
 
 
 export default function EditorPage() {
@@ -32,6 +34,7 @@ export default function EditorPage() {
   const { slug } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  
   
   // Refs
   const assetUploadRef = useRef<HTMLInputElement>(null);
@@ -43,7 +46,8 @@ export default function EditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  
+  const [activeToast, setActiveToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const closeToast = () => setActiveToast(null);
   const [activePanel, setActivePanel] = useState<'pages' | 'navbar' | 'settings' | 'assets'>('pages');
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -55,7 +59,14 @@ export default function EditorPage() {
   const [selectedFlexElementId, setSelectedFlexElementId] = useState<string | null>(null);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
-
+  const [publishing, setPublishing] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const MAX_HISTORY = 30;
+  const [redoHistory, setRedoHistory] = useState<any[]>([]);
+  const [readyToPublish, setReadyToPublish] = useState(false);
+  const [showPreviewDropdown, setShowPreviewDropdown] = useState(false); // הכנה לדרופדאון של ה-Preview
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  
   // Effects
   useEffect(() => { loadEditorData(); }, [slug]);
   useEffect(() => { if (activePanel === 'assets' && site) fetchAssets(); }, [activePanel, site]);
@@ -92,6 +103,113 @@ const toggleRight = () => setRightCollapsed(!rightCollapsed);
 
 const isZenModeActive = leftCollapsed && rightCollapsed;
 
+  // פונקציה שמעדכנת את האתר ושומרת את המצב הקודם בהיסטוריה
+const updateSiteWithHistory = (newSite: any) => {
+    if (!site) {
+      setSite(newSite);
+      return;
+    }
+
+    setHistory(prev => {
+      const currentState = JSON.parse(JSON.stringify(site));
+      const updatedHistory = [...prev, currentState];
+      if (updatedHistory.length > MAX_HISTORY) {
+        return updatedHistory.slice(1);
+      }
+      return updatedHistory;
+    });
+
+    // 🎯 הצינור נקטע: מנקים את ה-Redo כי נוצר שינוי חדש בזמן
+    setRedoHistory([]); 
+    setSite(newSite);
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    
+    const prevHistory = [...history];
+    const lastState = prevHistory.pop();
+    
+    // שומרים את המצב הנוכחי בתוך ה-Redo לפני שחוזרים אחורה
+    setRedoHistory(prev => [...prev, JSON.parse(JSON.stringify(site))]);
+    setHistory(prevHistory);
+    setSite(lastState);
+    
+    markChanged('page', activePageKey);
+  };
+
+  const handleRedo = () => {
+    if (redoHistory.length === 0) return;
+    
+    const prevRedo = [...redoHistory];
+    const nextState = prevRedo.pop(); // שליפת המצב הבא קדימה
+    
+    // מחזירים את המצב הנוכחי להיסטוריית ה-Undo הרגילה
+    setHistory(prev => [...prev, JSON.parse(JSON.stringify(site))]);
+    setRedoHistory(prevRedo);
+    setSite(nextState);
+    
+    markChanged('page', activePageKey);
+  };
+
+  const handlePublish = async () => {
+    if (!site) return;
+    setPublishing(true);
+    
+    try {
+      // 1. שליפת המשתמש המחובר מה-Auth
+      const { data: { user } } = await supabase.auth.getUser();
+      const userEmail = user?.email || 'System User';
+
+      // 2. עדכון טבלת האתרים הראשית (הפיכת הגרסה לציבורית חי)
+      const { error: updateError } = await supabase
+        .from('sites')
+        .update({ 
+          published_data: site.draft_data, 
+          published_theme: site.theme_settings,
+          is_published: true, 
+          last_published_at: new Date().toISOString()
+        })
+        .eq('id', site.id);
+
+      if (updateError) throw updateError;
+
+      // 3. הוספת רשומה חדשה לטבלת ההיסטוריה
+      const { error: historyError } = await supabase
+        .from('site_publications')
+        .insert({
+          site_id: site.id,
+          published_data: site.draft_data,
+          published_theme: site.theme_settings,
+          published_by: userEmail
+        });
+
+      if (historyError) throw historyError;
+
+      // 4. 🎯 קריאה לפונקציית הניקוי האטומית בבסיס הנתונים (RPC)
+      // הפונקציה תנקה ברמת השרת את כל מה שמעבר ל-5 הגרסאות האחרונות
+      const { error: rpcError } = await supabase
+        .rpc('clean_site_publications', { target_site_id: site.id });
+
+      if (rpcError) throw rpcError;
+      
+      setReadyToPublish(false); // נעילת כפתור הפרסום עד לשמירה הבאה
+      
+      setActiveToast({ 
+        message: lang === 'he' ? 'האתר פורסם וגובה בהצלחה!' : 'Site published and backed up!', 
+        type: 'success' 
+      });
+    } catch (err: any) {
+      console.error("Publish failed:", err);
+      setActiveToast({ 
+        message: lang === 'he' ? 'הפרסום נכשל' : 'Publishing failed', 
+        type: 'error' 
+      });
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const loadEditorData = async () => {
     setLoading(true);
     const { data: orgData } = await supabase.from('organizations').select('*').eq('slug', slug).single();
@@ -125,13 +243,17 @@ const isZenModeActive = leftCollapsed && rightCollapsed;
   const sections = activePageData.sections || [];
   const selectedSection = sections.find((s: any) => s.id === selectedId);
 
-  const markChanged = (type: 'section' | 'page', id: string) => {
-    setUnsavedChanges(prev => {
-        const key = type === 'section' ? 'sections' : 'pages';
-        if (prev[key].includes(id)) return prev;
-        return { ...prev, [key]: [...prev[key], id] };
-    });
-  };
+  const markChanged = (type: 'section' | 'page' | 'site', id: string) => {
+  // אם בעתיד תרצה לנהל שינויים ברמת האתר כולו (site), תוכל להוסיף כאן לוגיקה
+  if (type === 'site') return;
+
+  setReadyToPublish(false);
+  setUnsavedChanges(prev => {
+      const key = type === 'section' ? 'sections' : 'pages';
+      if (prev[key].includes(id)) return prev;
+      return { ...prev, [key]: [...prev[key], id] };
+  });
+};
 
   const handleSave = async (showPreview = false) => {
     if (!site) return;
@@ -139,18 +261,38 @@ const isZenModeActive = leftCollapsed && rightCollapsed;
     const { error } = await supabase.from('sites').update({ draft_data: site.draft_data, theme_settings: site.theme_settings }).eq('id', site.id);
     if (error) { alert("Error: " + error.message); setSaving(false); return; }
     setUnsavedChanges({ sections: [], pages: [] });
-    if (showPreview) window.open(`/sites/${org.slug}/${activePageKey === 'home' ? '' : activePageKey}`, '_blank');
+    setReadyToPublish(true); // שמירה בוצעה! כעת הכפתור זמין לפרסום
+    if (showPreview) window.open(`/draft/${org.slug}/${activePageKey}`, '_blank');
     setTimeout(() => setSaving(false), 800);
   };
 
   const updateSectionContent = (id: string, newContent: any) => {
     const updatedSections = sections.map((s: any) => s.id === id ? { ...s, content: { ...s.content, ...newContent } } : s);
-    setSite((prev: any) => ({ ...prev, draft_data: { ...prev.draft_data, pages: { ...prev.draft_data.pages, [activePageKey]: { ...activePageData, sections: updatedSections } } } }));
+    const newSite = { 
+      ...site, 
+      draft_data: { 
+        ...site.draft_data, 
+        pages: { 
+          ...site.draft_data.pages, 
+          [activePageKey]: { ...activePageData, sections: updatedSections } 
+        } 
+      } 
+    };
+    
+    updateSiteWithHistory(newSite); // שימוש ב-History
     markChanged('section', id);
   };
 
   const updateNavbar = (updates: any) => {
-    setSite((prev: any) => ({ ...prev, draft_data: { ...prev.draft_data, navbar: { ...prev.draft_data.navbar, ...updates } } }));
+    const newSite = { 
+      ...site, 
+      draft_data: { 
+        ...site.draft_data, 
+        navbar: { ...site.draft_data.navbar, ...updates } 
+      } 
+    };
+    
+    updateSiteWithHistory(newSite); // שימוש ב-History
     markChanged('page', 'navbar'); 
   };
 
@@ -281,20 +423,26 @@ const handleAssetSelect = (url: string) => {
 
   // פונקציית עזר לעדכון ה-Sections בתוך ה-Site State
   // זה יחסוך לנו כתיבה חוזרת של כל המבנה העמוק של האובייקט
-  const updateSectionsState = (newSections: any[]) => {
-    setSite((prev: any) => ({
-      ...prev,
+const updateSectionsState = (newSections: any[]) => {
+    // וידוא שיש לנו אובייקט site לפני הגישה אליו
+    if (!site) return;
+
+    const newSite = {
+      ...site,
       draft_data: {
-        ...prev.draft_data,
+        ...site.draft_data, // שימוש ב-site במקום ב-prev
         pages: {
-          ...prev.draft_data.pages,
-          [activePageKey]: {
-            ...activePageData,
-            sections: newSections
+          ...site.draft_data.pages,
+          [activePageKey]: { 
+            ...activePageData, 
+            sections: newSections 
           }
         }
       }
-    }));
+    };
+    
+    // שליחה לעדכון עם תיעוד להיסטוריה (Undo)
+    updateSiteWithHistory(newSite);
     markChanged('page', activePageKey);
   };
 
@@ -403,7 +551,7 @@ const handleAssetSelect = (url: string) => {
 
   return (
     <div className="h-screen flex flex-col bg-brand-grey overflow-hidden" dir="ltr">
-        <header className="h-16 bg-white border-b border-brand-mint flex items-center justify-between px-6 z-[100] shadow-sm">
+        <header className="h-16 bg-white border-b border-brand-mint flex items-center justify-between px-6 z-[250] shadow-sm">
             <div className="flex items-center gap-4">
                 <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-brand-grey rounded-xl transition-colors"><ChevronLeft /></button>
                 <h1 className="font-black text-brand-dark leading-none">{org?.name_he}</h1>
@@ -411,6 +559,7 @@ const handleAssetSelect = (url: string) => {
             </div>
 <div className="flex items-center gap-3">
     {/* קבוצה 1: מצבי תצוגה */}
+{/* קבוצה 1: מצבי תצוגה */}
     <div className="flex bg-brand-grey p-1 rounded-xl border border-brand-mint shadow-inner">
         <button 
             onClick={() => setPreviewMode('desktop')} 
@@ -431,32 +580,149 @@ const handleAssetSelect = (url: string) => {
     {/* קו מפריד (Divider) */}
     <div className="w-px h-6 bg-brand-lavender/50 mx-1" />
 
-    {/* קבוצה 2: ניהול סיידברים (Zen Mode) */}
+    {/* 🎯 קבוצה חדשה: כפתורי Undo & Redo במרכז */}
     <div className="flex bg-brand-grey p-1 rounded-xl border border-brand-mint shadow-inner">
         <button 
-            onClick={toggleZenMode}
-            disabled={activePanel === 'navbar'} 
-            className={`p-2 rounded-lg transition-all flex items-center justify-center ${
-                activePanel === 'navbar' 
-                ? 'opacity-20 cursor-not-allowed' 
-                : isZenModeActive 
-                    ? 'bg-brand-main text-white shadow-md' 
-                    : 'bg-white/50 text-brand-charcoal/40 hover:bg-white hover:text-brand-main'
-            }`}
-            title={activePanel === 'navbar' ? t.editor.shell.navModeWarning : t.editor.shell.zenMode}
+            onClick={handleUndo}
+            disabled={history.length === 0}
+            className={`p-2 rounded-lg transition-all ${history.length > 0 ? 'bg-white/50 text-brand-main hover:bg-white shadow-sm' : 'text-brand-charcoal/20 cursor-not-allowed'}`}
+            title={lang === 'he' ? `ביטול פעולה (${history.length})` : `Undo (${history.length})`}
         >
-            {isZenModeActive ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            <Undo2 size={16} />
+        </button>
+        <button 
+            onClick={handleRedo}
+            disabled={redoHistory.length === 0}
+            className={`p-2 rounded-lg transition-all ${redoHistory.length > 0 ? 'bg-white/50 text-brand-main hover:bg-white shadow-sm' : 'text-brand-charcoal/20 cursor-not-allowed'}`}
+            title={lang === 'he' ? `בצע שוב (${redoHistory.length})` : `Redo (${redoHistory.length})`}
+        >
+            <Redo2 size={16} />
         </button>
     </div>
+
+    {/* קו מפריד (Divider) */}
+    <div className="w-px h-6 bg-brand-lavender/50 mx-1" />
+
+    {/* קבוצה 3: ניהול סיידברים (Zen Mode) */}
+    <div className="flex bg-brand-grey p-1 rounded-xl border border-brand-mint shadow-inner">
+      <button 
+        onClick={() => {
+          if (activePanel === 'navbar') {
+            setActiveToast({ message: t.editor.shell.navModeWarning, type: 'error' });
+            return;
+          }
+          toggleZenMode();
+        }}
+        className={`p-2 rounded-lg transition-all flex items-center justify-center ${
+          activePanel === 'navbar' ? 'opacity-40' : isZenModeActive ? 'bg-brand-main text-white shadow-md' : 'bg-white/50 text-brand-charcoal/40 hover:bg-white'
+        }`}
+      >
+        {isZenModeActive ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+      </button>
+    </div>
+
 </div>
             <div className="flex items-center gap-3">
-              <button onClick={() => handleSave(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-black text-brand-main hover:bg-brand-mint rounded-xl transition-all">
-                  <Eye size={16} /> {t.editor.shell.preview}
+              
+              {/* 🎯 כפתור היסטוריית שחזורים החדש */}
+              <button 
+                type="button"
+                onClick={() => setShowHistoryModal(true)} 
+                className="flex items-center justify-center p-2 text-brand-charcoal/60 hover:text-brand-main hover:bg-brand-mint rounded-xl transition-all"
+                title={lang === 'he' ? 'היסטוריית פרסומים ושחזור' : 'Publication History & Rollback'}
+              >
+                <History size={18} />
               </button>
-              <button onClick={() => handleSave(false)} disabled={saving} className="bg-brand-main text-white px-6 py-2.5 rounded-xl font-black shadow-lg flex items-center gap-2 min-w-[100px] justify-center">
+
+              {/* 🎯 1. תפריט תצוגה מקדימה כפול (Preview Dropdown) */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowPreviewDropdown(!showPreviewDropdown)} 
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-black text-brand-main hover:bg-brand-mint rounded-xl transition-all"
+                >
+                  <ExternalLink size={16} /> {t.editor.shell.preview}
+                </button>
+
+                {showPreviewDropdown && (
+                  <>
+                    {/* שכבה שקופה לסגירת הדרופדאון בלחיצה בחוץ */}
+                    <div className="fixed inset-0 z-40" onClick={() => setShowPreviewDropdown(false)} />
+                    
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-brand-mint rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      
+                      {/* אופציה א': גרסת דראפט */}
+                      <button 
+                        onClick={() => {
+                          // שומר קודם כל את המצב הנוכחי כדי שהתצוגה המקדימה תהיה מעודכנת
+                          handleSave(false); 
+                          window.open(`/draft/${org.slug}/${activePageKey}`, '_blank');
+                          setShowPreviewDropdown(false);
+                        }}
+                        className="w-full text-start p-3 text-[12px] font-bold text-brand-charcoal hover:bg-brand-mint/30 transition-colors border-b border-brand-mint/10 flex items-center gap-2"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-brand-main animate-pulse" />
+                        {lang === 'he' ? 'גרסת טיוטה (Draft)' : 'Draft Version'}
+                      </button>
+
+                      {/* אופציה ב': גרסה ציבורית */}
+                      <button 
+                        onClick={() => {
+                          window.open(`/sites/${org.slug}/${activePageKey === 'home' ? '' : activePageKey}`, '_blank');
+                          setShowPreviewDropdown(false);
+                        }}
+                        className="w-full text-start p-3 text-[12px] font-bold text-new-green hover:bg-brand-mint/30 transition-colors flex items-center gap-2"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-new-green" />
+                        {lang === 'he' ? 'גרסה ציבורית (Live)' : 'Public Version'}
+                      </button>
+
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* 🎯 2. כפתור שמירת טיוטה (Save) */}
+              {/* זמין רק אם יש שינויים שלא נשמרו */}
+              <button 
+                onClick={() => handleSave(false)} 
+                disabled={saving || (unsavedChanges.sections.length === 0 && unsavedChanges.pages.length === 0)} 
+                className={`px-4 py-2 rounded-xl font-black shadow-sm flex items-center gap-2 border-2 transition-all ${
+                  (unsavedChanges.sections.length > 0 || unsavedChanges.pages.length > 0)
+                    ? 'bg-white border-brand-main text-brand-main hover:bg-brand-mint'
+                    : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed shadow-none'
+                }`}
+              >
                   {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
                   {saving ? t.editor.shell.saving : t.editor.shell.save}
               </button>
+
+              {/* 🎯 3. כפתור פרסום (Publish) + מנגנון Tooltip בריחוף */}
+              {/* זמין רק אם האתר עבר שמירה מושלמת ואין שינויים פתוחים */}
+              <div className="group relative">
+                <button 
+                  onClick={handlePublish} 
+                  disabled={publishing || !readyToPublish || unsavedChanges.sections.length > 0 || unsavedChanges.pages.length > 0} 
+                  className={`px-6 py-2.5 rounded-xl font-black shadow-lg flex items-center gap-2 transition-all ${
+                    (readyToPublish && unsavedChanges.sections.length === 0 && unsavedChanges.pages.length === 0)
+                      ? 'bg-brand-indigo text-white hover:scale-105 active:scale-95'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                  }`}
+                >
+                  {publishing ? <Loader2 size={16} className="animate-spin" /> : <CloudUpload size={16} />} 
+                  {lang === 'he' ? 'פרסום' : 'Publish'}
+                </button>
+
+                {/* ה-Tooltip שיופיע רק אם הכפתור חסום בגלל שינויים שלא נשמרו */}
+                {(!readyToPublish || unsavedChanges.sections.length > 0 || unsavedChanges.pages.length > 0) && (
+                  <div className="absolute top-full right-1/2 translate-x-1/2 mt-2 hidden group-hover:block bg-brand-midnight text-white text-[9px] font-black py-1 px-3 rounded-lg whitespace-nowrap shadow-xl animate-in fade-in zoom-in-95 duration-150 z-[210]">
+                    {lang === 'he' ? 'נא לבצע שמירה לפני הפרסום' : 'Please save before publishing'}
+                    
+                    {/* חץ קטן מעודכן שממוקם למעלה ומצביע אל הכפתור */}
+                    <div className="absolute bottom-full right-1/2 translate-x-1/2 border-4 border-transparent border-b-brand-midnight" />
+                  </div>
+                )}
+              </div>
+
           </div>
         </header>
 
@@ -535,17 +801,26 @@ const handleAssetSelect = (url: string) => {
 )}
 <main className="flex-1 bg-brand-grey overflow-y-auto custom-scrollbar pt-2 flex justify-center">
 <EditorCanvas 
-  activePanel={activePanel}
+activePanel={activePanel}
   previewMode={previewMode}
   activePageData={activePageData}
   sections={sections}
   selectedId={selectedId}
   setSelectedId={setSelectedId}
+  selectedFlexElementId={selectedFlexElementId}
+  setSelectedFlexElementId={setSelectedFlexElementId}
+  selectAssetForField={selectAssetForField}
   updateSectionContent={updateSectionContent}
   showAddModal={showAddModal}
   setShowAddModal={setShowAddModal}
   addSection={addSection}
   site={site}
+  deleteSection={deleteSection}
+  duplicateSection={duplicateSection}
+  moveSection={moveSection}
+  // --- אלו השורות שחייבות להופיע ---
+  pages={pages} 
+  activePageKey={activePageKey}
 />
 </main>
 
@@ -574,7 +849,27 @@ const handleAssetSelect = (url: string) => {
     menuJsonRef={menuJsonRef} 
     handleMenuJsonImport={handleMenuJsonImport} 
     primaryColor={primaryColor} 
+    setActiveToast={setActiveToast}
+    activePanel={activePanel}
 />
+
+<PublishHistoryModal 
+    isOpen={showHistoryModal}
+    onClose={() => setShowHistoryModal(false)}
+    site={site}
+    lang={lang}
+    activePageKey={activePageKey}
+    updateSiteWithHistory={updateSiteWithHistory}
+    markChanged={markChanged}
+  />
+
+{activeToast && (
+  <Toast 
+    message={activeToast.message} 
+    type={activeToast.type} 
+    onClose={() => setActiveToast(null)} 
+  />
+)}
         </div>
     </div>
   );

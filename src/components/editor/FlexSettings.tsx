@@ -1,7 +1,14 @@
 "use client";
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Maximize2, Palette, Layers, GripVertical } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Maximize2, 
+  Palette, 
+  Layers, 
+  GripVertical 
+} from 'lucide-react';
 import { ElementEditor } from './ElementEditor';
 
 // ייבוא הקבוצות המעודכנות
@@ -31,9 +38,18 @@ interface FlexSettingsProps {
 }
 
 export const FlexSettings = ({
-  site, selectedSection, selectedId, updateSectionContent, addFlexElement,
-  updateFlexElement, selectAssetForField, selectedFlexElementId,
-  setSelectedFlexElementId, onBackToPage, activePageKey, pages
+  site, 
+  selectedSection, 
+  selectedId, 
+  updateSectionContent, 
+  addFlexElement,
+  updateFlexElement, 
+  selectAssetForField, 
+  selectedFlexElementId,
+  setSelectedFlexElementId, 
+  onBackToPage, 
+  activePageKey, 
+  pages
 }: FlexSettingsProps) => {
 
   const { lang } = useLanguage();
@@ -42,21 +58,28 @@ export const FlexSettings = ({
   const content = selectedSection.content;
   const currentElement = content.elements?.find((e: any) => e.id === selectedFlexElementId);
 
+  // פונקציית עזר לעדכון תוכן הסקשן
   const updateContent = (updates: any) => {
     updateSectionContent(selectedId, { ...content, ...updates });
   };
 
+  /**
+   * השרשרת: מצב עריכת אלמנט (Element Focus)
+   * אם נבחר אלמנט ספציפי, עוברים לעורך האלמנטים
+   */
   if (selectedFlexElementId && currentElement) {
     return (
-      <ElementEditor 
-        site={site} // וודא שזה עובר לאלמנט אדיטור עבור צבעי הברנד באלמנטים
-        el={currentElement}
-        selectedId={selectedId}
-        updateFlexElement={updateFlexElement}
-        selectAssetForField={selectAssetForField}
-        onBack={() => setSelectedFlexElementId(null)}
-        selectedSection={selectedSection}
-      />
+      <div className="animate-in slide-in-from-left duration-300">
+        <ElementEditor 
+          site={site}
+          el={currentElement}
+          selectedId={selectedId}
+          updateFlexElement={updateFlexElement}
+          selectAssetForField={selectAssetForField}
+          onBack={() => setSelectedFlexElementId(null)}
+          selectedSection={selectedSection}
+        />
+      </div>
     );
   }
 
@@ -66,7 +89,7 @@ export const FlexSettings = ({
   return (
     <div className="space-y-2 text-start animate-in fade-in duration-300 pb-20" dir={lang === 'he' ? 'rtl' : 'ltr'}>
       
-      {/* כפתור חזרה */}
+      {/* כפתור חזרה לעמוד הראשי */}
       <button 
         onClick={onBackToPage}
         className="flex items-center gap-2 px-1 py-1 text-brand-indigo hover:text-brand-indigo/70 transition-all group mb-4"
@@ -81,7 +104,7 @@ export const FlexSettings = ({
         </span>
       </button>
 
-      {/* 1. זהות הסקשן */}
+      {/* 1. הגדרות בסיסיות (זהות הסקשן) */}
       <div className="mb-6">
         <SectionBasicGroup 
           content={selectedSection} 
@@ -90,38 +113,54 @@ export const FlexSettings = ({
       </div>
 
       <div className="flex flex-col">
-        {/* 2. גובה ומימדים */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.dimensions} icon={<Maximize2 size={14}/>}>
+        {/* 2. גובה, רוחב ומימדים */}
+        <SettingsCollapse 
+          id={`${selectedId}-dimensions`}
+          label={t.editor.sidebar.sections.groups.dimensions} 
+          icon={<Maximize2 size={14}/>}
+        >
           <DimensionsGroup 
             content={content} 
             updateContent={updateContent} 
-            site={site} // הזרקת ה-site עבור צבעים במידה ויש פיקר במימדים
+            site={site} 
           />
         </SettingsCollapse>
 
-        {/* 3. רקע (צבע/תמונה/שקיפות) */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.background} icon={<Palette size={14}/>} defaultOpen={true}>
+        {/* 3. רקע (צבע/תמונה/אוברליי) */}
+        <SettingsCollapse 
+          id={`${selectedId}-background`}
+          label={t.editor.sidebar.sections.groups.background} 
+          icon={<Palette size={14}/>}
+        >
           <SectionBackgroundGroup 
             content={content}
             updateContent={updateContent}
-            site={site} // קריטי עבור צבעי הברנד בפיקר הרקע
+            site={site}
             allSectionsContent={allSectionsContent}
             onOpenAssetManager={(callback) => selectAssetForField(selectedId, 'bg_image', undefined, callback)}
           />
         </SettingsCollapse>
 
-        {/* 4. אפקטי קצוות */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.effects} icon={<Layers size={14}/>}>
+        {/* 4. אפקטי קצוות ופיידים */}
+        <SettingsCollapse 
+          id={`${selectedId}-effects`}
+          label={t.editor.sidebar.sections.groups.effects} 
+          icon={<Layers size={14}/>}
+        >
           <EdgeEffectsGroup 
             content={content}
             updateContent={updateContent}
-            site={site} // קריטי עבור צבעי ה-Fade (Top/Bottom)
+            site={site}
             allSectionsContent={allSectionsContent}
           />
         </SettingsCollapse>
 
-        {/* 5. ניהול והוספת אלמנטים */}
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.elements} icon={<GripVertical size={14}/>} defaultOpen={true}>
+        {/* 5. ניהול אלמנטים (Content Manager) */}
+        <SettingsCollapse 
+          id={`${selectedId}-elements`}
+          label={t.editor.sidebar.sections.groups.elements} 
+          icon={<GripVertical size={14}/>}
+        >
           <ContentManagerGroup 
             content={content}
             updateContent={updateContent}

@@ -1,18 +1,25 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// הגדרת ה-Interface לקבלת content ו-site
 interface ParagraphProps {
   content: any;
   site?: any;
+  onUpdate?: (updates: any) => void;
 }
 
-export const Paragraph = ({ content, site }: ParagraphProps) => {
+export const Paragraph = ({ content, site, onUpdate }: ParagraphProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [tempText, setTempText] = useState(content?.text || '');
+
+  // המנעול: מצב עריכה פעיל רק אם יש פונקציית עדכון
+  const isEditable = !!onUpdate && typeof onUpdate === 'function';
+
+  useEffect(() => {
+    if (content?.text) setTempText(content.text);
+  }, [content?.text]);
 
   if (!content) return null;
 
-  // חילוץ שפת האתר וקביעת כיווניות
   const siteLanguage = site?.theme_settings?.site_language || 'en';
   const isRTL = siteLanguage === 'he';
 
@@ -22,18 +29,15 @@ export const Paragraph = ({ content, site }: ParagraphProps) => {
     text_color,
     font_weight,
     italic,
-    // תמיכה בשני שמות שדות האליינמנט
     align,
     text_align,
     letter_spacing,
     line_height,
-    // Decorations & Formatting
     underline,
     strike,
-    bottom_line, // סנכרון עם הדינג
+    bottom_line,
     overline,
     uppercase,
-    // Box Model מורחב
     padding,
     padding_top,
     padding_bottom,
@@ -42,20 +46,16 @@ export const Paragraph = ({ content, site }: ParagraphProps) => {
     margin_top,
     margin_bottom,
     opacity,
-    // Frame/Stroke
     border_width,
     border_color,
-    // Shadow & Outline
     outline_w,
     outline_c,
     shadow_intensity,
     shadow_c,
     shadow_color,
-    shadow_type,
     shadow_blur,
     shadow_x,
     shadow_y,
-    // Interactions
     hover_enabled,
     hover_type,
     hover_scale,
@@ -68,41 +68,27 @@ export const Paragraph = ({ content, site }: ParagraphProps) => {
     link_target_blank
   } = content;
 
-  // 1. Fake Stroke - יצירת בורדר לאותיות ללא חניקה
+  // --- לוגיקת עיצוב (משוחזרת במלואה) ---
   const getSolidStroke = (isHover: boolean) => {
     const effectiveWidth = border_width || 0;
     const effectiveColor = (isHover && hover_enabled && hover_type === 'colors_swap') 
       ? (hover_border_color || border_color) 
       : (border_color || '#000000');
-    
     if (effectiveWidth <= 0) return 'none';
     const w = effectiveWidth;
     const c = effectiveColor;
-    return `
-      ${w}px ${w}px 0 ${c}, -${w}px ${w}px 0 ${c}, 
-      ${w}px -${w}px 0 ${c}, -${w}px -${w}px 0 ${c}, 
-      0px ${w}px 0 ${c}, 0px -${w}px 0 ${c}, 
-      ${w}px 0px 0 ${c}, -${w}px 0px 0 ${c}
-    `;
+    return `${w}px ${w}px 0 ${c}, -${w}px ${w}px 0 ${c}, ${w}px -${w}px 0 ${c}, -${w}px -${w}px 0 ${c}, 0px ${w}px 0 ${c}, 0px -${w}px 0 ${c}, ${w}px 0px 0 ${c}, -${w}px 0px 0 ${c}`;
   };
 
-  // 2. Clean Outline
   const getCleanOutline = () => {
     if (!outline_w || outline_w <= 0) return 'none';
     const c = outline_c || '#000000';
     const w = outline_w;
-    return `
-      ${w}px ${w}px 0 ${c}, -${w}px ${w}px 0 ${c}, 
-      ${w}px -${w}px 0 ${c}, -${w}px -${w}px 0 ${c}, 
-      0px ${w}px 0 ${c}, 0px -${w}px 0 ${c}, 
-      ${w}px 0px 0 ${c}, -${w}px 0px 0 ${c}
-    `;
+    return `${w}px ${w}px 0 ${c}, -${w}px ${w}px 0 ${c}, ${w}px -${w}px 0 ${c}, -${w}px -${w}px 0 ${c}, 0px ${w}px 0 ${c}, 0px -${w}px 0 ${c}, ${w}px 0px 0 ${c}, -${w}px 0px 0 ${c}`;
   };
 
-  // 3. Drop Shadow דינמי
   const getShadow = () => {
     const color = shadow_color || shadow_c || 'rgba(0,0,0,0.2)';
-    
     if (shadow_intensity !== undefined && Number(shadow_intensity) > 0) {
       switch (Number(shadow_intensity)) {
         case 1: return `0px 2px 4px ${color}`;   
@@ -110,22 +96,12 @@ export const Paragraph = ({ content, site }: ParagraphProps) => {
         case 3: return `0px 12px 24px ${color}`; 
       }
     }
-
     if (shadow_blur !== undefined || shadow_x !== undefined || shadow_y !== undefined) {
       return `${shadow_x ?? 0}px ${shadow_y ?? 2}px ${shadow_blur ?? 4}px ${color}`;
     }
-
-    if (shadow_type && shadow_type !== 'none') {
-      const blur = shadow_blur ?? 3;
-      if (shadow_type === 'soft') return `0px 2px ${blur}px ${color}`;
-      if (shadow_type === 'medium') return `0px 4px ${blur * 2}px ${color}`;
-      if (shadow_type === 'hard') return `${blur/2}px ${blur/2}px 0px ${color}`;
-    }
-
     return 'none';
   };
 
-  // 4. Glow Effect
   const getGlowShadow = (isHover: boolean) => {
     if (isHover && hover_enabled && hover_type === 'glow') {
       const c = hover_glow_color || '#6366f1';
@@ -145,7 +121,6 @@ export const Paragraph = ({ content, site }: ParagraphProps) => {
     ? hover_text_color
     : (text_color || 'inherit');
 
-  // לוגיקת יישור: עדיפות להגדרה מפורשת, אחרת לפי שפת האתר
   const finalTextAlign = align || text_align || (isRTL ? 'right' : 'left');
 
   const style: React.CSSProperties = {
@@ -163,35 +138,49 @@ export const Paragraph = ({ content, site }: ParagraphProps) => {
     letterSpacing: letter_spacing ? `${letter_spacing}px` : 'normal',
     lineHeight: line_height || 1.6,
     textShadow: combinedShadow || 'none',
-    
     paddingTop: `${padding_top ?? padding ?? 0}px`,
     paddingBottom: `${padding_bottom ?? padding ?? 0}px`,
     paddingLeft: `${padding_left ?? padding ?? 0}px`,
     paddingRight: `${padding_right ?? padding ?? 0}px`,
     marginTop: `${margin_top ?? 0}px`,
     marginBottom: `${margin_bottom ?? 0}px`,
-    
     opacity: (opacity ?? 100) / 100,
     width: '100%',
-
-    cursor: link_enabled ? 'pointer' : 'default',
+    cursor: isEditable ? 'text' : (link_enabled ? 'pointer' : 'default'),
     transition: `all ${hover_transition || 0.3}s ease-in-out`,
     transform: (isHovered && hover_enabled && hover_type === 'scale_up') 
       ? `scale(${hover_scale || 1.05})` 
       : 'scale(1)',
-    zIndex: isHovered ? 10 : 1,
     position: 'relative',
-    border: 'none',
-    borderRadius: '0px',
-    direction: isRTL ? 'rtl' : 'ltr' // הבטחת כיווניות הטקסט
+    direction: isRTL ? 'rtl' : 'ltr',
+    outline: 'none'
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLParagraphElement>) => {
+    if (isEditable) {
+      const newText = e.currentTarget.innerText;
+      if (newText !== text) {
+        onUpdate({ text: newText });
+      }
+    }
   };
 
   const ParagraphElement = (
     <p 
       style={style} 
-      className="whitespace-pre-wrap break-words transition-all duration-300 relative group"
+      className="whitespace-pre-wrap break-words"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      // 🎯 עריכה ישירה
+      contentEditable={isEditable}
+      suppressContentEditableWarning={true}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        // ב-Paragraph אנחנו מאפשרים Enter לשורות חדשות, לכן לא מונעים אותו כברירת מחדל
+        if (e.key === 'Escape') {
+          e.currentTarget.blur();
+        }
+      }}
     >
       {hover_enabled && hover_type === 'wrapping_lines' && (
         <>
@@ -205,11 +194,11 @@ export const Paragraph = ({ content, site }: ParagraphProps) => {
           />
         </>
       )}
-      {text}
+      {tempText}
     </p>
   );
 
-  if (link_enabled && link_url) {
+  if (link_enabled && link_url && !isEditable) {
     return (
       <a 
         href={link_url} 

@@ -5,6 +5,7 @@ import { X, Trash2, Calendar, HardDrive, Save, ArrowLeft, Move, Loader2, Externa
 import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/context/LanguageContext';
 import { Language, translations } from '@/lib/translations/index';
+import { analyzeSite } from '@/utils/editor/pageAnalyzer'; // ייבוא הסרוויס החדש
 
 export const AssetDetailView = ({ 
   asset, 
@@ -14,7 +15,7 @@ export const AssetDetailView = ({
   siteId, 
   currentPath, 
   showToast,
-  allSections = [] 
+  site // הוספנו את site כ-Prop כדי לאפשר סריקה של כל האתר
 }: any) => {
   const { lang } = useLanguage();
   const t = translations[lang as Language];
@@ -33,21 +34,36 @@ export const AssetDetailView = ({
     }
   }, [asset, currentPath]);
 
-  // לוגיקת זיהוי שימושים
-  const usageLocations = useMemo(() => {
-    if (!asset.url) return [];
-    const urlBase = asset.url.split('?')[0];
-    const fileName = asset.name;
+  // לוגיקת זיהוי שימושים משופרת המבוססת על ה-Page Analyzer
+const usageLocations = useMemo(() => {
+    // 1. בדיקה שהמידע הבסיסי קיים
+    if (!asset?.url || !site) {
+        return [];
+    }
+    
+    // 2. הרצת הסורק על כל האתר
+    const { allImages } = analyzeSite(site);
+    
+    // 3. ניקוי ה-URL של האסט (הסרת סימני שאלה ופרמטרים)
+    const assetUrlBase = asset.url.split('?')[0].split('#')[0];
 
-    return allSections.filter((section: any) => {
-      const sectionString = JSON.stringify(section);
-      return sectionString.includes(urlBase) || sectionString.includes(fileName);
-    }).map((section: any) => ({
-      id: section.id,
-      type: section.type,
-      name: section.content?.title || section.content?.heading || `Section: ${section.type}`
-    }));
-  }, [asset.url, asset.name, allSections]);
+    // 4. סינון
+    const matches = allImages.filter(img => {
+      if (!img.url) return false;
+      const imgUrlBase = img.url.split('?')[0].split('#')[0];
+      return assetUrlBase === imgUrlBase;
+    }).map(img => {
+      const pageName = site.draft_data?.pages?.[img.pageKey]?.name || img.pageKey;
+      
+      return {
+        ...img,
+        displayName: pageName,
+        contextLabel: t.editor.canvas.assetManager.locations.context[img.context as keyof typeof t.editor.canvas.assetManager.locations.context] || img.context
+      };
+    });
+
+    return matches;
+  }, [asset.url, site, t.editor.canvas.assetManager.locations.context]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -99,8 +115,6 @@ export const AssetDetailView = ({
       
       {/* אזור התצוגה המקדימה - Preview Section */}
       <div className="flex-1 bg-[#F8F9FB] flex flex-col relative overflow-hidden h-full">
-        
-        {/* Header פנימי מהודק - מבטיח שהתמונה לא תעלה על הכפתורים */}
         <div className="w-full px-6 py-4 z-20 flex justify-between items-center shrink-0">
             <button 
                 onClick={onBack} 
@@ -119,7 +133,6 @@ export const AssetDetailView = ({
             </button>
         </div>
         
-        {/* Image Container - שימוש ב-Padding ו-object-contain למניעת חיתוך */}
         <div className="flex-1 px-8 pb-8 flex items-center justify-center overflow-hidden">
            <div className="relative w-full h-full flex items-center justify-center">
                 <img 
@@ -132,7 +145,7 @@ export const AssetDetailView = ({
         </div>
       </div>
 
-      {/* פאנל הגדרות - צומצם ל-400px כדי לפנות מקום לתמונה */}
+      {/* פאנל הגדרות */}
       <div className="w-[400px] border-l border-brand-lavender/20 p-8 flex flex-col text-start overflow-y-auto custom-scrollbar bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.01)] z-30 shrink-0">
         <div className="mb-8 flex justify-between items-start">
           <div>
@@ -145,7 +158,6 @@ export const AssetDetailView = ({
         </div>
 
         <div className="space-y-6 flex-1">
-          {/* עריכת קובץ */}
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[9px] font-black uppercase text-brand-charcoal/40 ml-1 tracking-widest">{t.editor.modals.assetManager.assetDetail.renameLabel}</label>
@@ -170,7 +182,7 @@ export const AssetDetailView = ({
             </div>
           </div>
 
-          {/* מעקב שימושים */}
+          {/* מעקב שימושים משודרג */}
           <div className="pt-6 border-t border-brand-lavender/10">
             <div className="flex items-center justify-between mb-4">
                 <label className="text-[9px] font-black uppercase text-brand-charcoal/40 flex items-center gap-2 tracking-widest">
@@ -184,12 +196,18 @@ export const AssetDetailView = ({
             {usageLocations.length > 0 ? (
               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                 {usageLocations.map((loc: any, idx: number) => (
-                  <div key={`${loc.id}-${idx}`} className="flex items-center justify-between p-3.5 bg-brand-mint/5 border border-brand-mint/10 rounded-2xl animate-in fade-in slide-in-from-right duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+                  <div key={`${loc.sectionId}-${idx}`} className="flex items-center justify-between p-3.5 bg-brand-mint/5 border border-brand-mint/10 rounded-2xl animate-in fade-in slide-in-from-right duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
                     <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-brand-mint uppercase tracking-widest">{loc.type}</span>
-                      <span className="text-[11px] font-bold text-brand-dark opacity-70 truncate max-w-[200px]">{loc.name}</span>
+                      {/* שם העמוד והקונטקסט (רקע/תוכן וכו') */}
+                      <span className="text-[8px] font-black text-brand-main/70 uppercase tracking-widest">
+                        {loc.displayName} • {loc.contextLabel}
+                      </span>
+                      {/* סוג הסקשן */}
+                      <span className="text-[11px] font-bold text-brand-dark truncate max-w-[200px]">
+                        Section: {loc.sectionType}
+                      </span>
                     </div>
-                    <div className="w-7 h-7 rounded-full bg-brand-mint/20 flex items-center justify-center text-brand-mint">
+                    <div className="w-7 h-7 rounded-full bg-brand-mint/50 flex items-center justify-center text-brand-main shadow-inner">
                         <Check size={12} strokeWidth={3} />
                     </div>
                   </div>
@@ -198,29 +216,27 @@ export const AssetDetailView = ({
             ) : (
               <div className="p-8 border-2 border-dashed border-brand-grey rounded-[2rem] flex flex-col items-center justify-center text-center">
                 <Info size={20} className="text-brand-charcoal/20 mb-2" />
-                <p className="text-[9px] font-bold text-brand-charcoal/40 uppercase tracking-widest leading-relaxed">
+                <p className="text-[9px] font-bold text-brand-charcoal/50 uppercase tracking-widest leading-relaxed">
                     {t.editor.modals.assetManager.assetDetail.notInUse}
                 </p>
               </div>
             )}
           </div>
 
-          {/* פרטים טכניים */}
           <div className="grid grid-cols-2 gap-4 pt-4">
              <div className="bg-brand-grey/30 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
                 <Calendar size={14} className="text-brand-main mb-2" />
-                <p className="text-[8px] font-black text-brand-charcoal/40 uppercase tracking-widest mb-1">{t.editor.modals.assetManager.assetDetail.technical.uploaded}</p>
+                <p className="text-[8px] font-black text-brand-charcoal/50 uppercase tracking-widest mb-1">{t.editor.modals.assetManager.assetDetail.technical.uploaded}</p>
                 <p className="text-[10px] font-bold text-brand-dark">{new Date(asset.created_at).toLocaleDateString()}</p>
              </div>
              <div className="bg-brand-grey/30 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
                 <HardDrive size={14} className="text-brand-main mb-2" />
-                <p className="text-[8px] font-black text-brand-charcoal/40 uppercase tracking-widest mb-1">{t.editor.modals.assetManager.assetDetail.technical.format}</p>
+                <p className="text-[8px] font-black text-brand-charcoal/50 uppercase tracking-widest mb-1">{t.editor.modals.assetManager.assetDetail.technical.format}</p>
                 <p className="text-[10px] font-bold text-brand-dark uppercase">{asset.name.split('.').pop()}</p>
              </div>
           </div>
         </div>
 
-        {/* פעולות */}
         <div className="pt-8 space-y-3 shrink-0">
           <button 
             onClick={handleSave}

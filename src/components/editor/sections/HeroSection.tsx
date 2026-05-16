@@ -6,16 +6,27 @@ import { Heading } from '../elements/Heading';
 import { Paragraph } from '../elements/Paragraph';
 import { ButtonElement } from '../elements/ButtonElement';
 import { ImageElement } from '../elements/ImageElement';
+import { SmartWrapper } from '../elements/SmartWrapper';
 
-export default function HeroSection({ section, isSelected, site }: any) {
+export default function HeroSection({ 
+  section, 
+  isSelected, 
+  site, 
+  updateContent,
+  selectedFlexElementId, 
+  setSelectedFlexElementId,
+  onSelectElement,
+  onOpenAssetManager 
+}: any) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { content } = section;
   
-  // חילוץ שפת האתר וקביעת כיווניות
+  // 🎯 המנעול המרכזי: אם updateContent לא קיים, אנחנו באתר הציבורי.
+  const isEditor = !!updateContent;
+
   const siteLanguage = site?.theme_settings?.site_language || 'en';
   const isRTL = siteLanguage === 'he';
 
-  // סנכרון עם הסיידבר: שימוש ב-slider_images במקום slides
   const activeSlides = (content.slider_images || []).filter((s: string) => s).slice(0, 5);
 
   useEffect(() => {
@@ -29,23 +40,75 @@ export default function HeroSection({ section, isSelected, site }: any) {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % activeSlides.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
 
-  // הגדרות גובה ומימדים
+const handleElementUpdate = (elementId: string, updates: Record<string, any>) => {
+    if (!updateContent) return;
+
+    // 1. פתיחת ניהול מדיה
+    if (updates._triggerAssetManager && onOpenAssetManager) {
+      onOpenAssetManager(elementId);
+      return;
+    }
+
+    let newElements = [...(content.elements || [])];
+    const index = newElements.findIndex(el => el.id === elementId);
+    if (index === -1) return;
+
+    // 2. מחיקה
+    if (updates._delete) {
+      newElements = newElements.filter(el => el.id !== elementId);
+      if (typeof setSelectedFlexElementId === 'function') setSelectedFlexElementId(null);
+    } 
+    // 3. שכפול
+    else if (updates._duplicate) {
+      const elementToCopy = newElements[index];
+      const newElement = { 
+        ...elementToCopy, 
+        id: `${elementToCopy.type}-${Math.random().toString(36).substr(2, 9)}` 
+      };
+      newElements.splice(index + 1, 0, newElement);
+    } 
+    // 4. הזזה למעלה
+    else if (updates._moveUp && index > 0) {
+      const temp = newElements[index];
+      newElements[index] = newElements[index - 1];
+      newElements[index - 1] = temp;
+    } 
+    // 5. הזזה למטה
+    else if (updates._moveDown && index < newElements.length - 1) {
+      const temp = newElements[index];
+      newElements[index] = newElements[index + 1];
+      newElements[index + 1] = temp;
+    }
+    // 6. עדכון רגיל
+    else {
+      newElements = newElements.map((el: any) => 
+        el.id === elementId ? { ...el, ...updates } : el
+      );
+    }
+
+    updateContent({ elements: newElements });
+  };
+
   const containerStyle: React.CSSProperties = {
     height: content.max_height ? `${content.max_height}px` : '100vh',
     minHeight: '400px',
-    direction: isRTL ? 'rtl' : 'ltr' // קביעת כיווניות הקונטיינר
+    direction: isRTL ? 'rtl' : 'ltr'
   };
 
   return (
     <div 
-      className={`relative overflow-hidden flex items-center justify-center transition-all duration-500 ${isSelected ? 'ring-2 ring-brand-indigo ring-inset' : ''}`}
+      /* overflow-visible מאפשר לטולבר הצף להופיע מחוץ לגבולות הסקשן באדיטור */
+      className={`relative flex items-center justify-center transition-all duration-500 
+        ${isEditor && isSelected && !selectedFlexElementId ? 'ring-2 ring-brand-indigo ring-inset' : ''}
+        ${isEditor && selectedFlexElementId ? 'overflow-visible' : 'overflow-hidden'} 
+      `}
       style={containerStyle}
     >
       {/* 1. Background Slides */}
       {activeSlides.length > 0 ? (
         activeSlides.map((url: string, i: number) => (
           <div
-            key={i}
+            key={url + i}
             className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${i === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
             style={{ backgroundImage: `url(${url})` }}
           />
@@ -94,17 +157,64 @@ export default function HeroSection({ section, isSelected, site }: any) {
       )}
 
       {/* 4. Content Layer */}
-      <div className={`relative z-20 container mx-auto px-6 flex flex-col items-center justify-center py-20`}>
+      <div className="relative z-20 container mx-auto px-6 flex flex-col items-center justify-center py-20">
         <div 
           className={`w-full flex flex-col gap-2 ${content.content_width || 'max-w-5xl'} ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}
         >
           {content.elements && content.elements.length > 0 ? (
             content.elements.map((el: any) => (
-              <div key={el.id} className="w-full">
-                {el.type === 'heading' && <Heading content={el} site={site} />}
-                {el.type === 'paragraph' && <Paragraph content={el} site={site} />}
-                {el.type === 'button' && <ButtonElement content={el} site={site} />}
-                {el.type === 'image' && <ImageElement content={el} site={site} />}
+              <div 
+                key={el.id} 
+                className={`w-full ${isEditor && selectedFlexElementId === el.id ? 'z-[100] relative' : 'z-auto'}`}
+              >
+              <SmartWrapper
+                id={el.id}
+                type={el.type}
+                content={el}
+                site={site}
+                isSelected={isEditor && selectedFlexElementId === el.id}
+                
+                // באדיטור שולחים פונקציות, באתר הציבורי undefined - מה שמעלים את ה-Wrapper
+                setSelectedFlexElementId={isEditor ? (id: string | null) => {
+                  if (typeof onSelectElement === 'function') {
+                    onSelectElement(section.id, id);
+                  } else if (typeof setSelectedFlexElementId === 'function') {
+                    setSelectedFlexElementId(id);
+                  }
+                } : undefined}
+                
+                onUpdate={isEditor ? (updates: Record<string, any>) => handleElementUpdate(el.id, updates) : undefined}
+              >
+                {el.type === 'heading' && (
+                  <Heading 
+                    content={el} 
+                    site={site} 
+                    onUpdate={isEditor ? (updates: Record<string, any>) => handleElementUpdate(el.id, updates) : undefined} 
+                  />
+                )}
+                {el.type === 'paragraph' && (
+                  <Paragraph 
+                    content={el} 
+                    site={site} 
+                    onUpdate={isEditor ? (updates: Record<string, any>) => handleElementUpdate(el.id, updates) : undefined} 
+                  />
+                )}
+                {el.type === 'button' && (
+                  <ButtonElement 
+                    content={el} 
+                    site={site} 
+                    onUpdate={isEditor ? (updates: Record<string, any>) => handleElementUpdate(el.id, updates) : undefined} 
+                  />
+                )}
+                {el.type === 'image' && (
+                  <ImageElement 
+                    content={el} 
+                    site={site} 
+                    onUpdate={isEditor ? (updates: Record<string, any>) => handleElementUpdate(el.id, updates) : undefined} 
+                  />
+                )}
+              </SmartWrapper>
+
                 {el.type === 'spacer' && (
                   <div 
                     style={{ 
@@ -119,11 +229,13 @@ export default function HeroSection({ section, isSelected, site }: any) {
               </div>
             ))
           ) : (
-            <div className="py-20 opacity-20 border-2 border-dashed border-white rounded-3xl w-full flex items-center justify-center">
-               <span className="text-white font-black uppercase text-sm">
-                 {isRTL ? 'קנבס היראו ריק' : 'Empty Hero Canvas'}
-               </span>
-            </div>
+            isEditor && (
+              <div className="py-20 opacity-20 border-2 border-dashed border-white rounded-3xl w-full flex items-center justify-center">
+                 <span className="text-white font-black uppercase text-sm">
+                   {isRTL ? 'קנבס הירו ריק' : 'Empty Hero Canvas'}
+                 </span>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -131,7 +243,6 @@ export default function HeroSection({ section, isSelected, site }: any) {
       {/* 5. Slider Navigation UI */}
       {activeSlides.length > 1 && (
         <>
-          {/* כפתורי הניווט מתהפכים ב-RTL (שמאל הופך לימין) */}
           <button 
             onClick={isRTL ? nextSlide : prevSlide} 
             className={`absolute ${isRTL ? 'right-6' : 'left-6'} z-30 p-3 text-white/30 hover:text-white hover:bg-white/10 rounded-full transition-all backdrop-blur-sm`}

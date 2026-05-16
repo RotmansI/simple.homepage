@@ -117,6 +117,7 @@ return (
               onClose={() => setIsAssetManagerOpen(false)}
               siteId={site?.id}
               allSections={site?.draft_data?.sections || []}
+              site={site}
             />
           )}
 

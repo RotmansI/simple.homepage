@@ -165,6 +165,7 @@ export const SettingsPanel = ({ site, updateNavbar, updateTheme, allSectionsCont
         onClose={() => setIsAssetManagerOpen(false)}
         siteId={site?.id}
         onSelect={(url: string) => setIsAssetManagerOpen(false)}
+        site={site}
       />
 
       <MenuManagementModal 

@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React from 'react'; // הסרתי את useState מכאן כי הוא לא נחוץ בגלל השימוש ב-Props
 import { 
   ChevronRight, Trash2, Type as TypeIcon, 
   FileText, MousePointer, ImageIcon, Minus, ChevronLeft,
@@ -16,12 +16,13 @@ import { SectionBackgroundGroup } from './settings/groups/SectionBackgroundGroup
 import MenuSectionSettings from './MenuSectionSettings';
 import { useLanguage } from '@/context/LanguageContext';
 import { Language, translations } from '@/lib/translations/index';
+import { ToastType } from '@/components/ui/Toast'; // ייבוא הטיפוס בלבד
 
 type AssetCallback = (url: string) => void;
 
 interface SectionPropertiesProps {
-  isCollapsed: boolean; // הפרופ החדש מהאבא
-  toggleSidebar?: () => void; // אופציונלי: פונקציה לפתיחה ידנית מהכפתור הצף
+  isCollapsed: boolean;
+  toggleSidebar?: () => void;
   site: any;
   selectedSection: any;
   activePageKey: string;
@@ -49,6 +50,7 @@ interface SectionPropertiesProps {
   menuJsonRef: any;
   handleMenuJsonImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   activePanel: string;
+  setActiveToast: (toast: { message: string; type: ToastType } | null) => void;
 }
 
 export default function SectionProperties(props: SectionPropertiesProps) {
@@ -69,6 +71,7 @@ export default function SectionProperties(props: SectionPropertiesProps) {
     deletePage,
     selectAssetForField,
     activePanel,
+    setActiveToast, // שימוש ב-Prop מהאבא בלבד
   } = props;
 
   const { lang } = useLanguage();
@@ -79,8 +82,7 @@ export default function SectionProperties(props: SectionPropertiesProps) {
     setSelectedFlexElementId(null);
   };
 
-  // לוגיקת רינדור התוכן הפנימי (מופרדת מה-aside)
-const renderContent = () => {
+  const renderContent = () => {
     if (!selectedSection) {
       const currentPage = pages[activePageKey];
       const updatePage = (updates: any) => {
@@ -131,10 +133,8 @@ const renderContent = () => {
       );
     }
 
-    // לוגיקת חילוץ שם אלמנט מתורגם
     const currentElement = selectedSection?.content?.elements?.find((e: any) => e.id === selectedFlexElementId);
     
-    // שליפה בטוחה של סוג האלמנט מתוך מפת התרגומים ב-sidebar.ts
     const translatedTypeName = currentElement?.type 
       ? t.editor.sidebar.sections.elementTypes[currentElement.type as keyof typeof t.editor.sidebar.sections.elementTypes] 
       : t.editor.sidebar.sectionProperties.defaultElementName;
@@ -153,14 +153,12 @@ const renderContent = () => {
             {selectedFlexElementId && (
               <>
                 <ChevronRight size={10} className={`opacity-30 flex-shrink-0 ${lang === 'he' ? 'rotate-180' : ''}`} />
-                {/* הצגת השם המתורגם (למשל: "תמונה" או "כותרת") */}
                 <span className="text-brand-indigo truncate">{translatedTypeName}</span>
               </>
             )}
           </div>
           <div className="flex items-center justify-between">
             <h2 className="text-[12px] font-black uppercase text-brand-midnight">
-              {/* כותרת הפאנל: משלבת את סוג האלמנט עם "הגדרות אלמנט" */}
               {selectedFlexElementId 
                 ? `${t.editor.sidebar.sectionProperties.elementTitle} ״${translatedTypeName}״ ` 
                 : t.editor.sidebar.sectionProperties.sectionTitle}
@@ -183,39 +181,45 @@ const renderContent = () => {
   };
 
 return (
-  <div className="relative flex h-full" dir={lang === 'he' ? 'rtl' : 'ltr'}>
-    {/* 1. כפתור Handle קבוע עם חץ משתנה */}
-    <div 
-      className={`absolute top-1/2 -left-4 -translate-y-1/2 z-50 transition-all duration-500`}
-    >
-      <button 
-        onClick={toggleSidebar}
-        className="p-1 bg-brand-main hover:bg-brand-accent text-white rounded-2xl shadow-xl transition-all active:scale-95 group"
-      >
-        {/* היפוך חצים: אם סגור (isCollapsed) מציג חץ שמאלה לפתיחה, ולהיפך */}
-        {isCollapsed ? (
-          <ChevronLeft size={20} className="group-hover:scale-125 transition-transform duration-300" />
-        ) : (
-          <ChevronRight size={20} className="group-hover:scale-125 transition-transform duration-300" />
-        )}
-      </button>
-    </div>
+    <div className="relative flex h-full" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+      {/* כפתור ה-Toggle עם הגנה וחסימה */}
+      <div className={`absolute top-1/2 -left-4 -translate-y-1/2 z-50 transition-all duration-500`}>
+        <button 
+          onClick={() => {
 
-    {/* 2. ה-Aside עם הטרנזישן החלק */}
-    <aside 
-      className={`
-        bg-white border-s border-brand-lavender flex flex-col z-40 shadow-sm text-start 
-        transition-all duration-500 ease-in-out overflow-hidden shrink-0
-        ${isCollapsed ? 'w-0 border-s-0 opacity-0' : 'w-80 opacity-100'}
-      `}
-    >
-      {/* 3. עטיפה ברוחב קבוע כדי שהתוכן לא יזוז בזמן שהרוחב של ה-aside משתנה */}
-      <div className="w-80 h-full flex flex-col">
-        {renderContent()}
+            if (activePanel === 'navbar') {
+              // קריאה לפונקציה של האבא
+              setActiveToast({ 
+                message: t.editor.shell.sidebarLockedWarning, 
+                type: 'error' 
+              });
+              return; // כאן מתבצעת החסימה - הפונקציה נעצרת ולא ממשיכה ל-toggle
+            }
+            
+            toggleSidebar?.();
+          }}
+          className={`p-1 text-white rounded-2xl shadow-xl transition-all active:scale-95 group ${
+            activePanel === 'navbar' 
+            ? 'bg-brand-main/40 cursor-pointer' 
+            : 'bg-brand-main hover:bg-brand-accent'
+          }`}
+          title={activePanel === 'navbar' ? t.editor.shell.sidebarLockedWarning : (isCollapsed ? 'Open Sidebar' : 'Close Sidebar')}
+        >
+          {isCollapsed ? (
+            <ChevronLeft size={20} className="group-hover:scale-125 transition-transform duration-300" />
+          ) : (
+            <ChevronRight size={20} className="group-hover:scale-125 transition-transform duration-300" />
+          )}
+        </button>
       </div>
-    </aside>
-  </div>
-);
+
+      <aside className={`bg-white border-s border-brand-lavender flex flex-col z-40 shadow-sm transition-all duration-500 ease-in-out overflow-hidden shrink-0 ${isCollapsed ? 'w-0 border-s-0 opacity-0' : 'w-80 opacity-100'}`}>
+        <div className="w-80 h-full flex flex-col">
+          {renderContent()}
+        </div>
+      </aside>
+    </div>
+  );
 }
 
 export function PropertyInput({ label, value, onChange, isTextarea }: any) {

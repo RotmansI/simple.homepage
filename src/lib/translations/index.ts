@@ -6,6 +6,7 @@ import { modalTranslations } from './editor/modals';
 import { sidebarTranslations } from './editor/sidebar';
 import { groupsTranslations } from './editor/groups'; // הייבוא החדש
 import { publicTranslations } from './public';
+import { canvasTranslations } from './editor/canvas';
 
 export type Language = 'en' | 'he';
 
@@ -19,6 +20,7 @@ export const translations = {
       modals: modalTranslations.en,
       sidebar: sidebarTranslations.en,
       groups: groupsTranslations.en, // הוספה למבנה האנגלי
+      canvas: canvasTranslations.en,
     },
     
   },
@@ -30,7 +32,8 @@ export const translations = {
       structure: structureTranslations.he,
       modals: modalTranslations.he,
       sidebar: sidebarTranslations.he,
-      groups: groupsTranslations.he // הוספה למבנה העברי
+      groups: groupsTranslations.he, // הוספה למבנה העברי
+      canvas: canvasTranslations.he,
     }
   }
 };

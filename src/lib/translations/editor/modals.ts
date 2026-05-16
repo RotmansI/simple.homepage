@@ -284,7 +284,7 @@ sections: {
         items: "פריטים",
         uses: "שימושים",
         available: "זמין",
-        deleteFolderConfirm: "האם אתה בטוח שברצונך למחוק את התיקייה",
+        deleteFolderConfirm: "האם אתה בטוח שברצונך למחוק את",
         deleteSuccess: "התיקייה נמחקה בהצלחה",
         deleteInconsistent: "מבנה התיקייה אינו עקבי, לא נמצא קובץ .keep",
         deleteFailed: "מחיקת התיקייה נכשלה"

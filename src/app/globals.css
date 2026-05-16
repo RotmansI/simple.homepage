@@ -4,10 +4,10 @@
   /* Simple. Brand Palette - Indigo-Playful Professional */
   
   /* Main Palette */
-  --color-brand-indigo: #4F46E5;    /* Electric Indigo */
+  --color-brand-indigo: #4f638a;    /* Electric Indigo */
   --color-brand-lime: #D9F99D;      /* Electric Lime */
   --color-brand-coral: #FF7E67;     /* Coral Dash (CTA) */
-  --color-brand-midnight: #3B0764;  /* Midnight Purple */
+  --color-brand-midnight: #001f34;  /* Midnight Purple */
   --color-brand-pearl: #F3F4F6;     /* Soft Pearl (BG) */
 
   /* Semantic Mapping - מחבר את הקוד הקיים לצבעים החדשים */
@@ -21,11 +21,37 @@
   /* Secondary Palette */
   --color-brand-teal: #0D9488;      /* Ocean Teal */
   --color-brand-orange: #FB923C;    /* Sunset Orange */
-  --color-brand-lavender: #DDD6FE;  /* Lavender Breeze */
+  --color-brand-lavender: #a4c8e1;  /* Lavender Breeze */
   
   /* Legacy mapping (למניעת שבירת UI קיים) */
   --color-salmon: var(--color-brand-coral);
   --color-crimson: #E01E4B;
+
+  /* New Colorfull Pallete */
+  --color-new-orange: #ee762f;
+  --color-new-lightorange: #efaf5e;
+  --color-new-lightforest: #8fa171;
+  --color-new-raspberry: #76304e;
+  --color-new-rosewine: #9a5c6d;
+  --color-new-greyblue: #4f638a;
+  --color-new-bluesky: #b3cbe5;
+  --color-new-forest: #728c5a;
+  --color-new-darklime: #b7be60;
+  --color-new-gum: #de6976;
+  --colornew-pinklime: #dd758c;
+  --color-new-darknight: #381351;
+  --color-new-purplerain: #522e7f;
+  --color-new-sunshine: #f4df91;
+  --color-new-cream: #ede1af;
+  --color-new-blossom: #edbfc6;
+  --color-new-marshmallow: #f3e1e9;
+  --color-new-teal: #578487;
+  --color-new-pearl: #F3F4F6;
+  --color-new-darkteal: #386060;
+  --color-new-salmon: #FF7E67;
+  --color-new-crimson: #E01E4B;
+  --color-new-green: #14b37e;
+
 }
 
 :root {

@@ -25,21 +25,33 @@ interface ElementEditorProps {
 }
 
 export const ElementEditor = ({ 
-  site, el, updateFlexElement, selectAssetForField, onBack, selectedId, selectedSection 
+  site, 
+  el, 
+  updateFlexElement, 
+  selectAssetForField, 
+  onBack, 
+  selectedId, 
+  selectedSection 
 }: ElementEditorProps) => {
   if (!el) return null;
   
   const { lang } = useLanguage();
   const t = translations[lang as Language];
   
-  // הגדרת קיצור דרך לנתיב הראשי כדי למנוע חזרתיות ושגיאות
-const edT = t?.editor?.sidebar?.sections?.elementEditor || {};
+  // הגדרת קיצור דרך לתרגומים כדי למנוע קריסות אם נתיב חסר
+  const edT = t?.editor?.sidebar?.sections?.elementEditor || {
+    backTo: lang === 'he' ? 'חזרה להגדרות' : 'Back to',
+    settingsSuffix: lang === 'he' ? '' : 'Settings',
+    buttonContent: { label: lang === 'he' ? 'תוכן הכפתור' : 'Button Content', placeholder: lang === 'he' ? 'כתוב כאן...' : 'Type here...' },
+    imageAsset: { label: lang === 'he' ? 'מקור התמונה' : 'Image Source', select: lang === 'he' ? 'בחירת תמונה' : 'Select Image', browse: lang === 'he' ? 'לחץ לשינוי' : 'Click to change', remove: lang === 'he' ? 'הסרת תמונה' : 'Remove Image' }
+  };
 
-  // תרגום שם הסקשן במידה והוא גנרי
+  // חילוץ שם הסקשן עבור ה-Breadcrumb (כפתור החזור)
   const sectionTitle = selectedSection?.name || 
     (selectedSection?.type ? t.editor.sidebar.sections.elementTypes[selectedSection.type as keyof typeof t.editor.sidebar.sections.elementTypes] : null) || 
     t.editor.sidebar.sectionProperties.defaultElementName;
 
+  // פונקציית עדכון מקוצרת לאלמנט הנוכחי
   const update = (updates: any) => updateFlexElement(el.id, updates);
 
   return (
@@ -49,7 +61,7 @@ const edT = t?.editor?.sidebar?.sections?.elementEditor || {};
       }`}
       dir={lang === 'he' ? 'rtl' : 'ltr'}
     >
-      {/* כפתור חזרה */}
+      {/* כפתור חזור לסקשן - סוגר את שרשרת ה-Element Focus */}
       <button 
         onClick={onBack}
         className="flex items-center gap-1 px-1 py-1 text-brand-indigo hover:text-brand-indigo/70 transition-all group mb-4"
@@ -66,7 +78,7 @@ const edT = t?.editor?.sidebar?.sections?.elementEditor || {};
         </span>
       </button>
 
-      {/* --- HEADING & PARAGRAPH --- */}
+      {/* --- מצב עריכה: כותרות ופסקאות --- */}
       {(el.type === 'heading' || el.type === 'paragraph') && (
         <>
           <TypographyGroup content={el} updateContent={update} site={site} isTextArea={el.type === 'paragraph'} />
@@ -77,9 +89,10 @@ const edT = t?.editor?.sidebar?.sections?.elementEditor || {};
         </>
       )}
 
-      {/* --- BUTTON --- */}
+      {/* --- מצב עריכה: כפתורים --- */}
       {el.type === 'button' && (
         <>
+          {/* בקרת תוכן הכפתור (הטקסט שמופיע עליו) */}
           <div className="p-4 bg-white rounded-2xl border border-brand-lavender shadow-sm mb-4">
              <span className="text-[9px] font-black uppercase text-brand-midnight opacity-40 block mb-3">
                {edT.buttonContent.label}
@@ -94,6 +107,7 @@ const edT = t?.editor?.sidebar?.sections?.elementEditor || {};
                 />
              </div>
           </div>
+          {/* הגדרות עיצוב הכפתור */}
           <TypographyGroup content={el} updateContent={update} site={site} showContentInput={false} />
           <VisualExtrasGroup content={el} updateContent={update} site={site}/>
           <FrameGroup content={el} updateContent={update} site={site} />
@@ -102,9 +116,10 @@ const edT = t?.editor?.sidebar?.sections?.elementEditor || {};
         </>
       )}
 
-      {/* --- IMAGE --- */}
+      {/* --- מצב עריכה: תמונות --- */}
       {el.type === 'image' && (
         <>
+          {/* בקרת בחירת/החלפת תמונה מהגלריה */}
           <div className="bg-white p-4 rounded-2xl border border-brand-lavender shadow-sm mb-4 space-y-4">
             <span className="text-[9px] font-black uppercase text-brand-midnight opacity-40 block">
               {edT.imageAsset.label}
@@ -150,6 +165,7 @@ const edT = t?.editor?.sidebar?.sections?.elementEditor || {};
             )}
           </div>
 
+          {/* הגדרות עיצוב התמונה */}
           <ImageLayoutGroup content={el} updateContent={update} />
           <FrameGroup content={el} updateContent={update} site={site} />
           <ShadowGroup content={el} updateContent={update} site={site} />
@@ -158,7 +174,7 @@ const edT = t?.editor?.sidebar?.sections?.elementEditor || {};
         </>
       )}
 
-      {/* --- SPACER --- */}
+      {/* --- מצב עריכה: מרווחים (Spacer) --- */}
       {el.type === 'spacer' && <SpacerGroup content={el} updateContent={update} site={site} />}
     </div>
   );

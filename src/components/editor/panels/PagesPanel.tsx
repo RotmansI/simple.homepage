@@ -99,14 +99,21 @@ export const PagesPanel = ({
             <div key={pKey} className="space-y-1">
               {/* Page Row */}
               <div 
-                onClick={() => switchPage(pKey)}
+                onClick={() => {
+                  /* 🎯 שינוי: לחיצה על עמוד עוברת אליו ופותחת רק את האקורדיון שלו */
+                  switchPage(pKey);
+                  setExpandedPages([pKey]);
+                }}
                 className={`group p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${activePageKey === pKey ? 'border-brand-main bg-brand-mint/5 shadow-sm' : 'border-brand-mint/30 hover:border-brand-main bg-white'}`}
               >
                 <div className="flex items-center gap-2 relative">
                   <button 
                     onClick={(e) => { 
                       e.stopPropagation(); 
-                      setExpandedPages((prev: string[]) => prev.includes(pKey) ? prev.filter(k => k !== pKey) : [...prev, pKey]); 
+                      /* 🎯 שינוי: גם כפתור ה-Chevron סוגר עמודים אחרים אם נפתח חדש */
+                      setExpandedPages((prev: string[]) => 
+                        prev.includes(pKey) ? [] : [pKey]
+                      ); 
                     }} 
                     className={`transition-transform ${expandedPages.includes(pKey) ? 'rotate-90' : ''}`}
                   >
@@ -205,23 +212,19 @@ export const PagesPanel = ({
                     </Droppable>
                   </DragDropContext>
                   
-<button 
-  onClick={(e) => { 
-    e.stopPropagation();
-    
-    // אם לחצנו על הוספה בעמוד שאינו הפעיל, נעבור אליו
-    if (activePageKey !== pKey) {
-      switchPage(pKey);
-    }
-    
-    // פתיחת המודאל
-    setShowAddModal(true); 
-  }} 
-  className="w-full py-2 mt-2 border-2 border-dashed border-brand-mint/40 rounded-lg text-[9px] font-black text-brand-charcoal/40 hover:border-brand-main hover:text-brand-main transition-all flex items-center justify-center gap-2 group"
->
-  <Plus size={12} className="group-hover:rotate-90 transition-transform duration-300" /> 
-  <span>{t.editor.structure.pagesPanel.addSection}</span>
-</button>
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation();
+                      if (activePageKey !== pKey) {
+                        switchPage(pKey);
+                      }
+                      setShowAddModal(true); 
+                    }} 
+                    className="w-full py-2 mt-2 border-2 border-dashed border-brand-mint/40 rounded-lg text-[9px] font-black text-brand-charcoal/40 hover:border-brand-main hover:text-brand-main transition-all flex items-center justify-center gap-2 group"
+                  >
+                    <Plus size={12} className="group-hover:rotate-90 transition-transform duration-300" /> 
+                    <span>{t.editor.structure.pagesPanel.addSection}</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -231,7 +234,7 @@ export const PagesPanel = ({
 
       {/* --- 2. SUGGESTED PAGES (Styled Select) --- */}
       <div className="pt-4 border-t border-brand-mint/30 space-y-3" dir={lang === 'he' ? 'rtl' : 'ltr'}>
-        <span className="text-[9px] font-black text-brand-charcoal/30 uppercase tracking-widest block px-1">{t.editor.structure.pagesPanel.suggestedPages}</span>
+        <span className="text-[9px] font-black text-brand-charcoal/80 uppercase tracking-widest block px-1">{t.editor.structure.pagesPanel.suggestedPages}</span>
         
         <div className="relative">
           <button 
@@ -240,7 +243,7 @@ export const PagesPanel = ({
           >
             <div className="flex items-center gap-2">
               <Search size={14} className="opacity-20" />
-              <span className="text-[10px] font-bold text-brand-charcoal/60 uppercase">{t.editor.structure.pagesPanel.quickAddPlaceholder}</span>
+              <span className="text-[10px] font-bold text-brand-charcoal uppercase">{t.editor.structure.pagesPanel.quickAddPlaceholder}</span>
             </div>
             <ChevronDownIcon size={14} className={`opacity-40 transition-transform ${isSelectOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -254,15 +257,15 @@ export const PagesPanel = ({
                     key={suggested} 
                     disabled={exists} 
                     onClick={() => { addNewPage(suggested); setIsSelectOpen(false); }}
-                    className={`w-full p-3 flex items-center justify-between border-b border-brand-mint/10 last:border-0 transition-colors ${exists ? 'bg-brand-grey/10 cursor-not-allowed opacity-50' : 'hover:bg-brand-mint/10'}`}
+                    className={`w-full  p-3 flex items-center justify-between border-b border-brand-mint/10 last:border-0 transition-colors ${exists ? 'bg-brand-grey/10 cursor-not-allowed opacity-50' : 'hover:bg-brand-mint/10'}`}
                   >
                     <span className={`text-[10px] font-bold uppercase ${exists ? 'text-brand-charcoal/30' : 'text-brand-charcoal/80'}`}>
                       {suggested}
                     </span>
                     {exists ? (
-                      <Check size={12} className="text-brand-main" />
+                      <Check size={14} className="text-new-crimson" />
                     ) : (
-                      <Plus size={12} className="text-brand-main" />
+                      <Plus size={14} className="text-new-lightforest" />
                     )}
                   </button>
                 );
@@ -274,7 +277,7 @@ export const PagesPanel = ({
 
       {/* --- 3. CUSTOM PAGES --- */}
       <div className="pt-4 border-t border-brand-mint/30 space-y-3" dir={lang === 'he' ? 'rtl' : 'ltr'}>
-        <span className="text-[9px] font-black text-brand-charcoal/30 uppercase tracking-widest block px-1">{t.editor.structure.pagesPanel.customPagesTitle}</span>
+        <span className="text-[9px] font-black text-brand-charcoal/80 uppercase tracking-widest block px-1">{t.editor.structure.pagesPanel.customPagesTitle}</span>
         
         <div className="p-3 bg-brand-pearl/50 rounded-2xl border border-brand-mint/20 space-y-3">
           <div className="flex gap-2">
@@ -293,7 +296,7 @@ export const PagesPanel = ({
               <PlusCircle size={18}/>
             </button>
           </div>
-          <div className="flex items-start gap-2 p-3 bg-brand-pearl rounded-xl border border-brand-lavender/50 text-[10px] text-brand-charcoal/60 leading-tight" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+          <div className="flex items-start gap-2 p-3 bg-brand-pearl rounded-xl border border-brand-lavender/50 text-[10px] text-brand-charcoal/80 leading-tight" dir={lang === 'he' ? 'rtl' : 'ltr'}>
                             <Info size={14} className="text-brand-indigo shrink-0" />
                             <p>
             {t.editor.structure.pagesPanel.customPageNote}

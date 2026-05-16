@@ -7,7 +7,8 @@ import {
   Maximize2, 
   ImageIcon, 
   Layers, 
-  GripVertical 
+  GripVertical,
+  ArrowLeft
 } from 'lucide-react';
 import { ElementEditor } from './ElementEditor';
 import { SettingsCollapse } from './settings/groups/SettingsCollapse';
@@ -28,7 +29,6 @@ interface HeroSettingsProps {
   selectedFlexElementId: string | null;
   setSelectedFlexElementId: (id: string | null) => void;
   updateFlexElement: (elId: string, updates: any) => void;
-  PropertyInput?: any;
   onBackToPage: () => void;
   activePageKey: string;
   pages: any;
@@ -51,32 +51,31 @@ export const HeroSettings = ({
   const t = translations[lang as Language];
 
   const content = selectedSection.content;
-  const currentElement = content.elements?.find((e: any) => e.id === selectedFlexElementId);
-
   const primaryColor = site?.theme_settings?.primary_color || '#000000';
 
+  // מציאת האלמנט הנבחר בתוך הסקשן
+  const currentElement = content.elements?.find((e: any) => e.id === selectedFlexElementId);
+
+  // פונקציית עזר לעדכון תוכן הסקשן
   const updateContent = (updates: any) => {
     updateSectionContent(selectedId, { ...content, ...updates });
   };
 
+  // הוספת אלמנט חדש ל-Hero (כותרת, פסקה או כפתור)
   const addHeroElement = (type: string) => {
     const newEl: any = { 
       id: `${type}-${crypto.randomUUID()}`, 
       type, 
       align: 'center',
-      text_color: primaryColor, 
+      text_color: '#ffffff',
       font_size: type === 'heading' ? 48 : 18,
       font_weight: type === 'heading' ? '800' : '400',
       line_height: 1.2,
       letter_spacing: 0
     };
 
-    if (type === 'heading') { 
-        newEl.text = t.editor.sidebar.sections.defaults.title; 
-    }
-    else if (type === 'paragraph') { 
-        newEl.text = t.editor.sidebar.sections.defaults.description; 
-    }
+    if (type === 'heading') newEl.text = t.editor.sidebar.sections.defaults.title;
+    else if (type === 'paragraph') newEl.text = t.editor.sidebar.sections.defaults.description;
     else if (type === 'button') { 
         newEl.text = t.editor.sidebar.sections.defaults.button; 
         newEl.bg_color = primaryColor; 
@@ -88,15 +87,17 @@ export const HeroSettings = ({
 
   if (selectedFlexElementId && currentElement) {
     return (
-      <ElementEditor 
-        site={site}
-        el={currentElement}
-        selectedId={selectedId}
-        updateFlexElement={updateFlexElement}
-        selectAssetForField={selectAssetForField}
-        onBack={() => setSelectedFlexElementId(null)}
-        selectedSection={selectedSection}
-      />
+      <div className="animate-in slide-in-from-left duration-300">
+        <ElementEditor 
+          site={site}
+          el={currentElement}
+          selectedId={selectedId}
+          updateFlexElement={updateFlexElement}
+          selectAssetForField={selectAssetForField}
+          onBack={() => setSelectedFlexElementId(null)}
+          selectedSection={selectedSection}
+        />
+      </div>
     );
   }
 
@@ -104,49 +105,67 @@ export const HeroSettings = ({
 
   return (
     <div className="space-y-2 text-start animate-in fade-in duration-300 pb-20" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+      {/* כפתור חזור לעמוד */}
       <button 
-              onClick={onBackToPage}
-              className="flex items-center gap-2 px-1 py-1 text-brand-indigo hover:text-brand-indigo/70 transition-all group mb-4"
-            >
-              {lang === 'he' ? (
-                <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
-              ) : (
-                <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-              )}
-              <span className="text-[10px] font-black uppercase tracking-tight">
-                {t.editor.sidebar.sections.backToPage} <span className="underline decoration-brand-indigo/30 underline-offset-2">{pageName}</span>
-              </span>
-            </button>
+        onClick={onBackToPage}
+        className="flex items-center gap-2 px-1 py-1 text-brand-indigo hover:text-brand-indigo/70 transition-all group mb-4"
+      >
+        {lang === 'he' ? (
+          <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+        ) : (
+          <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+        )}
+        <span className="text-[10px] font-black uppercase tracking-tight">
+          {t.editor.sidebar.sections.backToPage} <span className="underline decoration-brand-indigo/30 underline-offset-2">{pageName}</span>
+        </span>
+      </button>
 
+      {/* קבוצת הגדרות בסיסיות (תמיד גלוי, לא בתוך קולאפס) */}
       <div className="mb-6">
         <SectionBasicGroup 
           content={selectedSection} 
           updateContent={(updates) => updateSectionContent(selectedId, updates)} 
-          
         />
       </div>
 
+      {/* הגדרות הסקשן - כולם סגורים דיפולטיבית עכשיו */}
       <div className="flex flex-col">
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.dimensions} icon={<Maximize2 size={14}/>}>
+        <SettingsCollapse 
+          id={`${selectedId}-dimensions`}
+          label={t.editor.sidebar.sections.groups.dimensions} 
+          icon={<Maximize2 size={14}/>}
+        >
           <DimensionsGroup content={content} updateContent={updateContent} site={site}/>
         </SettingsCollapse>
 
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.slider} icon={<ImageIcon size={14}/>} defaultOpen={true}>
+        <SettingsCollapse 
+          id={`${selectedId}-slider`}
+          label={t.editor.sidebar.sections.groups.slider} 
+          icon={<ImageIcon size={14}/>}
+        >
           <HeroSliderGroup 
             content={content}
             updateContent={updateContent}
-            site={site} // הועבר לכאן כ-Prop תקין
+            site={site}
             onOpenAssetManager={(callback) => {
               selectAssetForField(selectedId, 'hero_slide', undefined, callback);
             }}
           />
         </SettingsCollapse>
 
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.effects} icon={<Layers size={14}/>}>
+        <SettingsCollapse 
+          id={`${selectedId}-effects`}
+          label={t.editor.sidebar.sections.groups.effects} 
+          icon={<Layers size={14}/>}
+        >
           <EdgeEffectsGroup content={content} updateContent={updateContent} site={site}/>
         </SettingsCollapse>
 
-        <SettingsCollapse label={t.editor.sidebar.sections.groups.elements} icon={<GripVertical size={14}/>} defaultOpen={true}>
+        <SettingsCollapse 
+          id={`${selectedId}-elements`}
+          label={t.editor.sidebar.sections.groups.elements} 
+          icon={<GripVertical size={14}/>}
+        >
           <ContentManagerGroup 
             content={content}
             updateContent={updateContent}

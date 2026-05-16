@@ -4,18 +4,28 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Utensils } from 'lucide-react';
 import { publicTranslations } from '@/lib/translations/public';
+import { SmartWrapper } from '../elements/SmartWrapper';
 
-export default function MenuSection({ section, site }: any) {
+export default function MenuSection({ 
+  section, 
+  site,
+  isSelected,
+  selectedFlexElementId,
+  setSelectedFlexElementId,
+  updateContent,
+  onSelectElement
+}: any) {
   const [menus, setMenus] = useState<any[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // חילוץ שפת האתר וקביעת כיווניות
+  // 🎯 המנעול המרכזי: האם אנחנו במצב אדיטור?
+  const isEditor = !!updateContent;
+
   const siteLanguage = site?.theme_settings?.site_language || 'en';
   const isRTL = siteLanguage === 'he';
   const tPublic = (publicTranslations as any)[siteLanguage] || publicTranslations.en;
 
-  // חילוץ הגדרות העיצוב
   const settings = section?.settings || section?.content?.settings || {};
   const selectedMenuIds = settings.selectedMenuIds || [];
   
@@ -72,12 +82,14 @@ export default function MenuSection({ section, site }: any) {
 
   const activeMenu = menus.find(m => m.id === activeMenuId);
 
+  // מצב טעינה
   if (loading) return (
     <div className="py-20 flex justify-center items-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-main"></div>
     </div>
   );
 
+  // מצב ריק
   if (menus.length === 0) return (
     <div className="py-20 text-center bg-brand-grey/20 rounded-[3rem] border-2 border-dashed border-brand-mint mx-6">
       <Utensils className="mx-auto text-brand-charcoal/20 mb-4" size={48} />
@@ -97,7 +109,12 @@ export default function MenuSection({ section, site }: any) {
         maskImage: settings.softEdges ? 'linear-gradient(to bottom, transparent, black 8%, black 92%, transparent)' : 'none',
         WebkitMaskImage: settings.softEdges ? 'linear-gradient(to bottom, transparent, black 8%, black 92%, transparent)' : 'none',
       }}
-      className={`py-16 px-6 transition-all duration-500 ${isRTL ? 'text-right' : 'text-left'}`}
+      className={`py-16 px-6 transition-all duration-500 relative
+        ${isRTL ? 'text-right' : 'text-left'}
+        /* 🚀 הצגת מסגרת בחירה רק באדיטור */
+        ${isEditor && isSelected && !selectedFlexElementId ? 'ring-2 ring-brand-indigo ring-inset' : ''}
+        ${isEditor && selectedFlexElementId ? 'overflow-visible' : 'overflow-hidden'}
+      `}
     >
       <div 
         className="max-w-7xl mx-auto transition-all duration-500"
@@ -117,24 +134,15 @@ export default function MenuSection({ section, site }: any) {
               {menus.map((menu) => (
                 <button
                   key={menu.id}
-                  onClick={() => setActiveMenuId(menu.id)}
-                  onMouseEnter={(e) => {
-                    if (activeMenuId !== menu.id) {
-                      e.currentTarget.style.backgroundColor = hoverBg;
-                      e.currentTarget.style.color = hoverText;
-                    }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenuId(menu.id);
                   }}
-                  onMouseLeave={(e) => {
-                    if (activeMenuId !== menu.id) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = settings.navText || 'inherit';
-                    }
-                  }}
+                  className="px-8 py-3 rounded-xl font-black text-sm transition-all duration-300 shadow-sm"
                   style={{
                     backgroundColor: activeMenuId === menu.id ? (settings.activeNavBg || 'var(--brand-primary)') : 'transparent',
                     color: activeMenuId === menu.id ? (settings.activeNavText || '#ffffff') : (settings.navText || 'inherit'),
                   }}
-                  className="px-8 py-3 rounded-xl font-black text-sm transition-all duration-300 shadow-sm"
                 >
                   {menu.name}
                 </button>
@@ -163,12 +171,11 @@ export default function MenuSection({ section, site }: any) {
           </div>
         )}
 
-        {/* Categories & Items */}
+        {/* Categories & Items Grid */}
         <div className="space-y-20">
           {activeMenu?.menu_data?.categories?.map((category: any) => (
             <div key={category.id} className="animate-in fade-in duration-700">
-              {/* Category Header */}
-              <div className={`flex items-center gap-6 mb-10 ${isRTL ? 'flex-row' : 'flex-row'}`}>
+              <div className="flex items-center gap-6 mb-10">
                 <h4 
                   style={{ color: settings.categoryColor || 'inherit' }}
                   className="text-2xl font-black whitespace-nowrap uppercase tracking-widest"
@@ -181,7 +188,6 @@ export default function MenuSection({ section, site }: any) {
                 />
               </div>
 
-              {/* Items Grid */}
               <div className={`grid gap-x-12 gap-y-10 ${useThreeColumns ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
                 {category.items?.map((item: any) => (
                   <div 
@@ -190,7 +196,7 @@ export default function MenuSection({ section, site }: any) {
                   >
                     {/* Item Image */}
                     <div className="w-24 h-24 shrink-0 bg-brand-grey rounded-2xl overflow-hidden border border-black/5 shadow-sm relative">
-                      {item.image_url || settings.defaultItemImage ? (
+                      {(item.image_url || settings.defaultItemImage) ? (
                         <img 
                           src={item.image_url || settings.defaultItemImage} 
                           alt={item.name} 
@@ -216,7 +222,7 @@ export default function MenuSection({ section, site }: any) {
                           style={{ 
                             color: settings.priceColor || 'var(--brand-main)',
                             backgroundColor: settings.priceColor ? `${settings.priceColor}1A` : 'rgba(var(--brand-main-rgb), 0.1)',
-                            direction: 'ltr' // המחיר תמיד מוצג משמאל לימין (₪50)
+                            direction: 'ltr' 
                           }}
                           className="text-lg font-black px-3 py-1 rounded-xl whitespace-nowrap"
                         >

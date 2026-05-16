@@ -5,27 +5,87 @@ import { Heading } from '../elements/Heading';
 import { Paragraph } from '../elements/Paragraph';
 import { ButtonElement } from '../elements/ButtonElement';
 import { ImageElement } from '../elements/ImageElement';
+import { SmartWrapper } from '../elements/SmartWrapper';
 
 export default function FlexSection({ 
   section, 
   isSelected, 
-  site, // הוספת site לקבלת שפת האתר
-  updateContent: _updateContent 
+  site,
+  updateContent,
+  selectedFlexElementId,
+  setSelectedFlexElementId,
+  onSelectElement,
+  onOpenAssetManager
 }: { 
   section: any, 
   isSelected?: boolean, 
   site?: any,
-  updateContent?: (updates: any) => void 
+  updateContent?: (updates: any) => void,
+  selectedFlexElementId?: string | null,
+  setSelectedFlexElementId?: (id: string | null) => void,
+  onSelectElement?: (sectionId: string, elementId: string) => void,
+  onOpenAssetManager?: (elementId: string) => void
 }) {
   const { content } = section;
   
+  // 🎯 המנעול המרכזי: האם אנחנו באדיטור?
+  const isEditor = !!updateContent;
+
   if (!content) return null;
 
-  // חילוץ שפת האתר וקביעת כיווניות
   const siteLanguage = site?.theme_settings?.site_language || 'en';
   const isRTL = siteLanguage === 'he';
 
-  // 1. הגדרות הקונטיינר הראשי
+  // פונקציית עדכון אלמנט ספציפי
+const handleElementUpdate = (elementId: string, updates: Record<string, any>) => {
+    if (!updateContent) return;
+
+    // 1. פתיחת ניהול מדיה
+    if (updates._triggerAssetManager && onOpenAssetManager) {
+      onOpenAssetManager(elementId);
+      return;
+    }
+
+    let newElements = [...(content.elements || [])];
+    const index = newElements.findIndex(el => el.id === elementId);
+    if (index === -1) return;
+
+    // 2. מחיקה
+    if (updates._delete) {
+      newElements = newElements.filter(el => el.id !== elementId);
+      if (typeof setSelectedFlexElementId === 'function') setSelectedFlexElementId(null);
+    } 
+    // 3. שכפול
+    else if (updates._duplicate) {
+      const elementToCopy = newElements[index];
+      const newElement = { 
+        ...elementToCopy, 
+        id: `${elementToCopy.type}-${Math.random().toString(36).substr(2, 9)}` 
+      };
+      newElements.splice(index + 1, 0, newElement);
+    } 
+    // 4. הזזה למעלה
+    else if (updates._moveUp && index > 0) {
+      const temp = newElements[index];
+      newElements[index] = newElements[index - 1];
+      newElements[index - 1] = temp;
+    } 
+    // 5. הזזה למטה
+    else if (updates._moveDown && index < newElements.length - 1) {
+      const temp = newElements[index];
+      newElements[index] = newElements[index + 1];
+      newElements[index + 1] = temp;
+    }
+    // 6. עדכון רגיל
+    else {
+      newElements = newElements.map((el: any) => 
+        el.id === elementId ? { ...el, ...updates } : el
+      );
+    }
+
+    updateContent({ elements: newElements });
+  };
+  
   const containerStyle: React.CSSProperties = {
     backgroundColor: content.is_transparent ? 'transparent' : (content.bg_color || '#ffffff'),
     backgroundImage: (!content.is_transparent && content.bg_image) ? `url(${content.bg_image})` : 'none',
@@ -34,9 +94,7 @@ export default function FlexSection({
     position: 'relative',
     minHeight: '100px', 
     height: content.max_height ? `${content.max_height}px` : 'auto', 
-    overflow: 'hidden',
     transition: 'all 0.5s ease-in-out',
-    // החלת כיווניות ברמת הקונטיינר
     direction: isRTL ? 'rtl' : 'ltr'
   };
 
@@ -53,11 +111,14 @@ export default function FlexSection({
   return (
     <section 
       style={containerStyle} 
-      className={`w-full relative group flex flex-col items-center transition-all ${isSelected ? 'ring-2 ring-brand-indigo ring-inset' : ''}`}
+      className={`w-full relative group flex flex-col items-center transition-all 
+        ${isEditor && isSelected && !selectedFlexElementId ? 'ring-2 ring-brand-indigo ring-inset' : ''}
+        ${isEditor && selectedFlexElementId ? 'overflow-visible' : 'overflow-hidden'}
+      `}
     >
       <div style={overlayStyle} />
 
-      {/* 3. Edge Effects (Fades) */}
+      {/* Edge Effects (Fades) */}
       {content.top_fade?.enabled && (
         <div 
           className="absolute top-0 left-0 w-full z-[5] pointer-events-none transition-all duration-500"
@@ -80,7 +141,7 @@ export default function FlexSection({
         />
       )}
       
-      {/* 4. Content Layer */}
+      {/* Content Layer */}
       <div 
         className={`container mx-auto px-6 relative z-10 flex flex-col transition-all duration-500 ${isRTL ? 'items-start text-right' : 'items-start text-left'}`}
         style={{
@@ -89,50 +150,76 @@ export default function FlexSection({
           maxWidth: content.content_width || '1200px'
         }}
       >
-        {/* יישור האלמנטים הפנימיים */}
         <div 
           className="flex flex-col w-full gap-2"
-          style={{ alignItems: isRTL ? 'flex-start' : 'flex-start' }} // ברירת מחדל ליישור לפי כיוון הכתיבה
+          style={{ alignItems: isRTL ? 'flex-start' : 'flex-start' }}
         >
           {content.elements?.map((el: any) => {
             const key = el.id;
+            
+            // הגדרת פונקציית עדכון מותנית
+            const elementOnUpdate = isEditor ? (u: any) => handleElementUpdate(el.id, u) : undefined;
 
-            switch (el.type) {
-              case 'heading':   
-                return <Heading key={key} content={el} site={site} />; // העברת site לאלמנטים
-              
-              case 'paragraph': 
-                return <Paragraph key={key} content={el} site={site} />;
-              
-              case 'button':    
-                return <ButtonElement key={key} content={el} site={site} />;
-              
-              case 'image':     
-                return <ImageElement key={key} content={el} site={site} />;
+            // רינדור האלמנט הנקי
+            const elementNode = (() => {
+              switch (el.type) {
+                case 'heading':   
+                  return <Heading content={el} site={site} onUpdate={elementOnUpdate} />;
+                case 'paragraph': 
+                  return <Paragraph content={el} site={site} onUpdate={elementOnUpdate} />;
+                case 'button':    
+                  return <ButtonElement content={el} site={site} onUpdate={elementOnUpdate} />;
+                case 'image':     
+                  return <ImageElement content={el} site={site} onUpdate={elementOnUpdate} />;
+                case 'spacer':    
+                  return (
+                    <div 
+                      style={{ 
+                        height: `${el.spacer_height || el.height || 40}px`, 
+                        backgroundColor: el.spacer_transparent === false 
+                          ? (el.spacer_color || el.bg_color || '#F3F4F6') 
+                          : 'transparent',
+                        opacity: el.spacer_transparent === false ? (el.spacer_opacity ?? 100) / 100 : 1,
+                        borderRadius: `${el.border_radius || 0}px`,
+                        marginTop: `${el.margin_top || 0}px`,
+                        marginBottom: `${el.margin_bottom || 0}px`,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }} 
+                      className="w-full" 
+                    />
+                  );
+                default: return null;
+              }
+            })();
 
-              case 'spacer':    
-                return (
-                  <div 
-                    key={key} 
-                    style={{ 
-                      height: `${el.spacer_height || el.height || 40}px`, 
-                      backgroundColor: el.spacer_transparent === false 
-                        ? (el.spacer_color || el.bg_color || '#F3F4F6') 
-                        : 'transparent',
-                      opacity: el.spacer_transparent === false 
-                        ? (el.spacer_opacity ?? 100) / 100 
-                        : 1,
-                      borderRadius: `${el.border_radius || 0}px`,
-                      marginTop: `${el.margin_top || 0}px`,
-                      marginBottom: `${el.margin_bottom || 0}px`,
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                    }} 
-                    className="w-full" 
-                  />
-                );
+            if (!elementNode) return null;
 
-              default: return null;
-            }
+            // החזרת התוצאה: באדיטור עוטפים ב-SmartWrapper, בחוץ מרנדרים נקי
+            return (
+              <div key={key} className={`w-full ${isEditor && selectedFlexElementId === el.id ? 'z-[100] relative' : 'z-auto'}`}>
+                {isEditor && el.type !== 'spacer' ? (
+                  <SmartWrapper
+                    id={el.id}
+                    type={el.type}
+                    content={el}
+                    site={site}
+                    isSelected={selectedFlexElementId === el.id}
+                    setSelectedFlexElementId={isEditor ? (id: string | null) => {
+                      if (typeof onSelectElement === 'function') {
+                        onSelectElement(section.id, id!);
+                      } else if (typeof setSelectedFlexElementId === 'function') {
+                        setSelectedFlexElementId(id);
+                      }
+                    } : undefined}
+                    onUpdate={elementOnUpdate}
+                  >
+                    {elementNode}
+                  </SmartWrapper>
+                ) : (
+                  elementNode
+                )}
+              </div>
+            );
           })}
         </div>
       </div>

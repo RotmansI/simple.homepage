@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Menu, X, Clock, MapPin, Phone, 
-  ShoppingBag, Calendar, Copy, Utensils, PhoneCall
+  ShoppingBag, Calendar, Copy, Utensils, PhoneCall, Star
 } from 'lucide-react';
 import { publicTranslations } from '@/lib/translations/public';
 
@@ -13,7 +13,7 @@ import {
   FaInstagram, FaFacebook, FaWhatsapp, FaWaze, FaGoogle 
 } from 'react-icons/fa';
 
-export default function SiteNavbar({ pages, slug, activePage, settings, orgName, theme }: any) {
+export default function SiteNavbar({ pages, slug, activePage, settings, orgName, theme, isDraft }: any) {
   const [activePopup, setActivePopup] = useState<'hours' | 'nav' | 'phone' | null>(null);
   const [isHoursLocked, setIsHoursLocked] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -24,11 +24,16 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
   const t = (publicTranslations as any)[siteLanguage]?.navbar || publicTranslations.en.navbar;
 
   const navSettings = settings?.navbar || {};
+  const basePath = isDraft ? 'draft' : 'sites';
   
   // צבעים מהתמה ומהגדרות הנאב
   const primaryColor = theme?.primary_color || '#0B4440';
   const bgColor = navSettings.bg_color || '#000000';
   
+  // 🎯 צבעי כפתורי הפעולה - נשלטים מהגדרות הנאב-בר עם Fallback לצבע המותג
+  const actionBtnBg = navSettings.action_btn_bg || primaryColor;
+  const actionBtnTextColor = navSettings.action_btn_text || '#ffffff';
+
   // צבעי טקסט וקישורים
   const brandTextColor = navSettings.text_color || '#ffffff';
   const linkColor = navSettings.link_color || '#ffffff';
@@ -72,7 +77,7 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
     return translationMap[key] || originalTitle;
   };
 
-  const actionButtonClass = `flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black transition-all hover:scale-105 active:scale-95 shadow-lg`;
+  const actionButtonClass = `flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] md:text-xs font-black transition-all hover:scale-105 active:scale-95 shadow-lg whitespace-nowrap`;
 
   return (
     <header className="sticky top-0 z-[100] w-full flex flex-col shadow-xl" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -80,7 +85,7 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
       {/* שכבה עליונה */}
       <div className="h-20 px-6 md:px-20 flex items-center justify-between border-b border-white/10" style={{ backgroundColor: bgColor, color: linkColor }}>
         
-        <Link href={`/sites/${slug}/home`} className="flex items-center shrink-0 lg:w-1/4">
+        <Link href={`/${basePath}/${slug}/home`} className="flex items-center shrink-0 lg:w-1/5">
           {navSettings.use_image && navSettings.brand_image ? (
             <img src={navSettings.brand_image} alt={orgName} className="h-10 md:h-14 w-auto object-contain" />
           ) : (
@@ -98,22 +103,28 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
           )}
         </Link>
 
-        {/* כפתורי פעולה */}
-        <div className="hidden lg:flex items-center justify-center gap-4 flex-1">
+        {/* 🎯 כפתורי פעולה - עכשיו עם 3 אפשרויות וצבעים מותאמים */}
+        <div className="hidden lg:flex items-center justify-center gap-3 flex-1">
           {navSettings.booking_url && (
-            <a href={navSettings.booking_url} target="_blank" className={actionButtonClass} style={{ backgroundColor: primaryColor, color: '#fff' }}>
+            <a href={navSettings.booking_url} target="_blank" className={actionButtonClass} style={{ backgroundColor: actionBtnBg, color: actionBtnTextColor }}>
                <Utensils size={14}/> {t.bookTable}
             </a>
           )}
           {navSettings.delivery_url && (
-            <a href={navSettings.delivery_url} target="_blank" className={actionButtonClass} style={{ backgroundColor: primaryColor, color: '#fff' }}>
+            <a href={navSettings.delivery_url} target="_blank" className={actionButtonClass} style={{ backgroundColor: actionBtnBg, color: actionBtnTextColor }}>
                <ShoppingBag size={14}/> {t.delivery}
+            </a>
+          )}
+          {/* כפתור חבר מועדון - מותנה בקיום לינק */}
+          {navSettings.club_url && (
+            <a href={navSettings.club_url} target="_blank" className={actionButtonClass} style={{ backgroundColor: actionBtnBg, color: actionBtnTextColor }}>
+               <Star size={14} className="fill-current"/> {navSettings.club_text || (isRTL ? 'חבר מועדון' : 'Club Member')}
             </a>
           )}
         </div>
 
         {/* אייקונים בצד */}
-        <div className="hidden md:flex items-center justify-end gap-1 lg:w-1/4">
+        <div className="hidden md:flex items-center justify-end gap-1 lg:w-1/5">
           <div className="relative nav-popup-container">
             <button onClick={() => setActivePopup(activePopup === 'nav' ? null : 'nav')} className="p-2.5 rounded-full transition-all" style={{ color: linkColor }}>
               <MapPin size={22} />
@@ -132,7 +143,7 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
                     </a>
                   )}
                   {navSettings.show_google !== false && (
-                    <a href={`http://maps.google.com/?q=${encodeURIComponent(navSettings.address || '')}`} target="_blank" className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-xs hover:scale-105 transition-transform">
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(navSettings.address || '')}`} target="_blank" className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-xs hover:scale-105 transition-transform">
                       <FaGoogle className="text-[#4285F4]" size={14} /> Maps
                     </a>
                   )}
@@ -173,7 +184,7 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
                   {navSettings.phone} <Copy size={14} className="text-gray-300" />
                 </button>
                 <div className="flex flex-col gap-2">
-                  <a href={`tel:${navSettings.phone}`} className="flex items-center justify-center gap-2 p-3 text-white rounded-xl font-black text-xs transition-transform active:scale-95 shadow-sm" style={{ backgroundColor: primaryColor }}>
+                  <a href={`tel:${navSettings.phone}`} className="flex items-center justify-center gap-2 p-3 text-white rounded-xl font-black text-xs transition-transform active:scale-95 shadow-sm" style={{ backgroundColor: actionBtnBg }}>
                     <PhoneCall size={14} /> {t.callNow}
                   </a>
                   {navSettings.whatsapp && (
@@ -207,7 +218,7 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
             return (
               <Link 
                 key={pKey} 
-                href={`/sites/${slug}/${pKey === 'home' ? '' : pKey}`}
+                href={`/${basePath}/${slug}/${pKey === 'home' ? '' : pKey}`}
                 className={`
                   relative font-bold text-[10px] uppercase tracking-[0.2em] transition-all whitespace-nowrap px-1 h-full flex items-center
                   after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:transition-transform after:duration-300
@@ -237,11 +248,6 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
                     backgroundColor: isActive ? linkActiveColor : linkHoverColor,
                   }}
                 />
-                
-                <style dangerouslySetInnerHTML={{ __html: `
-                  a[href*="${pKey}"]:hover div { transform: scaleX(1); }
-                  a[href*="${pKey}"]:hover span { color: ${linkHoverColor} !important; }
-                `}} />
               </Link>
             );
           })}
@@ -255,12 +261,32 @@ export default function SiteNavbar({ pages, slug, activePage, settings, orgName,
              <div className="text-xl" style={{ fontFamily: navSettings.text_font || 'inherit', fontWeight: navSettings.text_bold ? '900' : '400', fontStyle: navSettings.text_italic ? 'italic' : 'normal', color: navSettings.text_color || '#1A1A1A' }}>{navSettings.brand_text || orgName}</div>
              <button onClick={() => setIsOpen(false)}><X size={32}/></button>
           </div>
-          {Object.keys(pages).map((pKey) => (
-            <Link key={pKey} href={`/sites/${slug}/${pKey === 'home' ? '' : pKey}`} onClick={() => setIsOpen(false)} className="text-3xl font-black border-b border-gray-100 pb-4">
-              {getPageTitle(pKey, pages[pKey].name || pages[pKey].title)}
-            </Link>
-          ))}
-          <div className="mt-auto flex justify-center gap-10" style={{ color: primaryColor }}>
+          <div className="flex flex-col gap-4">
+            {/* כפתורי פעולה במובייל */}
+            {navSettings.booking_url && (
+              <a href={navSettings.booking_url} target="_blank" className={`${actionButtonClass} justify-center py-4 text-base`} style={{ backgroundColor: actionBtnBg, color: actionBtnTextColor }}>
+                 <Utensils size={18}/> {t.bookTable}
+              </a>
+            )}
+            {navSettings.delivery_url && (
+              <a href={navSettings.delivery_url} target="_blank" className={`${actionButtonClass} justify-center py-4 text-base`} style={{ backgroundColor: actionBtnBg, color: actionBtnTextColor }}>
+                 <ShoppingBag size={18}/> {t.delivery}
+              </a>
+            )}
+            {navSettings.club_url && (
+              <a href={navSettings.club_url} target="_blank" className={`${actionButtonClass} justify-center py-4 text-base`} style={{ backgroundColor: actionBtnBg, color: actionBtnTextColor }}>
+                 <Star size={18} className="fill-current"/> {navSettings.club_text || (isRTL ? 'חבר מועדון' : 'Club Member')}
+              </a>
+            )}
+          </div>
+          <div className="flex flex-col gap-4 mt-4">
+            {Object.keys(pages).map((pKey) => (
+              <Link key={pKey} href={`/${basePath}/${slug}/${pKey === 'home' ? '' : pKey}`} onClick={() => setIsOpen(false)} className="text-2xl font-black border-b border-gray-100 pb-4">
+                {getPageTitle(pKey, pages[pKey].name || pages[pKey].title)}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-auto flex justify-center gap-10" style={{ color: actionBtnBg }}>
              {navSettings.instagram && <a href={navSettings.instagram} target="_blank"><FaInstagram size={32} /></a>}
              {navSettings.facebook && <a href={navSettings.facebook} target="_blank"><FaFacebook size={32} /></a>}
              {navSettings.phone && <a href={`tel:${navSettings.phone}`}><PhoneCall size={32} /></a>}

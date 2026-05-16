@@ -13,6 +13,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Language, translations } from '@/lib/translations/index';
 
 export const AssetManagerModal = ({ 
+  site,
   isOpen, 
   onClose, 
   onSelect, 
@@ -197,6 +198,7 @@ export const AssetManagerModal = ({
                     onDeleted={() => { setEditingAsset(null); loadAssets(); }}
                     onUpdated={() => { setEditingAsset(null); loadAssets(); }}
                     showToast={showToast}
+                    site={site}
                 />
               )}
 
